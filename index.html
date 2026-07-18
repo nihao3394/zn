@@ -144,10 +144,16 @@
         </div>
     </footer>
 
+    <script src="config.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // 修改：不再使用本地存储，改向真实的后端 API 发送请求并带上自增指令
-            fetch('https://ps.findingstar.top/api/counter?action=hit')
+            // 安全检查：防止本地没配置 config.js 时导致页面彻底崩溃
+            if (!window.MY_APP_CONFIG || !window.MY_APP_CONFIG.apiBaseUrl) {
+                console.error('未找到 API 配置文件，请检查 config.js 是否存在');
+                return;
+            }
+            
+            fetch(window.MY_APP_CONFIG.apiBaseUrl)
                 .then(response => {
                     if (!response.ok) throw new Error('网络异常');
                     return response.json();
