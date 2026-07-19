@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>助农知识库·点亮乡村未来</title>
+    <style>
+        /* ==========================================
+           基础样式布局与平滑滚动
+           ========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.6; background-color: #f9f9f9; }
+        .container { width: 85%; max-width: 1200px; margin: 0 auto; }
+        
+        /* 导航栏样式 */
+        header { background-color: #2e7d32; color: white; padding: 15px 0; }
+        .nav-box { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { list-style: none; display: flex; gap: 20px; }
+        
+        .nav-links a { 
+            color: white; 
+            text-decoration: none; 
+            font-weight: bold; 
+            padding: 6px 14px; 
+            border-radius: 4px; 
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            background: linear-gradient(135deg, #a5d6a7, #81c784);
+            color: #1b5e20;
+        }
+
+        /* 横幅样式 */
+        .hero { 
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=1200&q=80') no-repeat center center/cover;
+            height: 350px; color: white; display: flex; align-items: center; text-align: center;
+        }
+        .hero-content { width: 100%; }
+        .hero h1 { font-size: 3rem; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        .hero p { font-size: 1.1rem; opacity: 0.9; }
+
+        /* 模块通用标题 */
+        .section-title { text-align: center; margin: 40px 0 10px; color: #2e7d32; font-size: 1.8rem; }
+        .section-subtitle { text-align: center; margin-bottom: 30px; color: #666; font-size: 0.95rem; }
+        
+        /* ==========================================
+           横向滑动卡片与边缘淡出样式
+           ========================================== */
+        .scroll-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 40px;
+            padding: 15px 0; /* 为卡片的悬浮上移效果留出空间 */
+            /* 实现左右边缘的淡出效果 */
+            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        }
+
+        .scroll-container { 
+            display: flex; 
+            gap: 30px; 
+            overflow-x: auto; 
+            padding: 10px 5%; /* 左右留白以配合 mask-image 的淡出区域 */
+            /* 隐藏系统默认滚动条使界面更美观 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+        
+        /* 知识库文章卡片样式 */
+        .card-link { 
+            text-decoration: none; 
+            color: inherit; 
+            display: block; 
+            border-radius: 8px; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            flex: 0 0 300px; /* 重点：固定卡片宽度，禁止被挤压 */
+        }
+        .card-link:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(46, 125, 50, 0.2); }
+        
+        .card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.08); text-align: center; padding-bottom: 20px; height: 100%; }
+        .card img { width: 100%; height: 180px; object-fit: cover; }
+        .card h3 { margin: 15px 0 10px; color: #1b5e20; font-size: 1.2rem; }
+        .card p { padding: 0 15px; color: #666; font-size: 0.9rem; }
+        
+        /* 标签样式 */
+        .tag { display: inline-block; background-color: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-top: 10px; }
+
+        /* 页脚 */
+        footer { background-color: #1b5e20; color: white; text-align: center; padding: 20px 0; margin-top: 40px; font-size: 0.9rem; }
+
+        /* 移动端响应式适配 */
+        @media (max-width: 768px) {
+            .container { width: 90%; }
+            .nav-box { flex-direction: column; gap: 15px; text-align: center; }
+            .nav-links { gap: 10px; justify-content: center; }
+            .nav-links a { padding: 5px 10px; font-size: 0.9rem; }
+            .hero h1 { font-size: 2rem; padding: 0 10px; }
+            .hero { height: 280px; }
+            .card-link { flex: 0 0 260px; } /* 移动端卡片稍微改窄一点 */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-box">
+            <h2>乡村振兴·助农前线</h2>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/wiki/" class="active">知识库</a></li>
+                    <li><a href="/products/">农产品</a></li>
+                    <li><a href="/about/">关于项目</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>助农知识库</h1>
+            <p>传递农业科技，分享致富经验，汇聚乡村振兴智慧</p>
+        </div>
+    </section>
+
+    <main class="container" id="wiki-catalog">
+        <h2 class="section-title">知识库目录</h2>
+        <p class="section-subtitle">滑动鼠标滚轮或左右拖动，查看更多知识文档</p>
+        
+        <!-- 增加了包裹层和滚动容器 -->
+        <div class="scroll-wrapper">
+            <div class="scroll-container" id="scroll-container">
+                <!-- 示例文件 1 -->
+                <a href="wiki_pages/example1.html" class="card-link">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1592982537447-6f296b05e620?auto=format&fit=crop&w=400&q=80" alt="现代农业种植技术">
+                        <h3>现代农业种植技术</h3>
+                        <p>介绍科学育苗、测土配方施肥以及大棚温控等现代种植基础知识。</p>
+                        <span class="tag">种植技术</span>
+                    </div>
+                </a>
+
+                <!-- 示例文件 2 -->
+                <a href="wiki_pages/example2.html" class="card-link">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1628186178358-1a52de2f31f9?auto=format&fit=crop&w=400&q=80" alt="病虫害绿色防治">
+                        <h3>病虫害绿色防治指南</h3>
+                        <p>汇总常见农作物病虫害图谱，以及物理、生物防控的无公害处理方案。</p>
+                        <span class="tag">生态保护</span>
+                    </div>
+                </a>
+
+                <!-- 示例文件 3 -->
+                <a href="wiki_pages/example3.html" class="card-link">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=400&q=80" alt="农产品电商运营">
+                        <h3>农产品电商运营入门</h3>
+                        <p>手把手教你如何开店、拍摄农产品以及利用短视频直播拓宽销路。</p>
+                        <span class="tag">数字赋能</span>
+                    </div>
+                </a>
+
+                <!-- 示例文件 4 -->
+                <a href="wiki_pages/example4.html" class="card-link">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" alt="惠农政策解读">
+                        <h3>2026年惠农政策解读</h3>
+                        <p>汇编最新农业补贴申请流程、农村金融信贷政策及返乡创业支持。</p>
+                        <span class="tag">政策指南</span>
+                    </div>
+                </a>
+                
+                <!-- 这里为了展示出滚动和淡出效果，我复制了一个占位卡片。当你实际数据增多时效果会很明显 -->
+                <a href="#" class="card-link">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=400&q=80" alt="乡村旅游开发">
+                        <h3>乡村旅游与文创开发</h3>
+                        <p>解析如何结合本地特色打造农文旅融合IP，带动周边产业协同发展。</p>
+                        <span class="tag">产业融合</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer id="footer">
+        <div class="container">
+            <p>© 2026 乡村振兴助农宣传 Demo 页. 数据及图片来源于网络公开资料.</p>
+            <p>联系邮箱：nihaoaaaaa@webmail.hzau.edu.cn | 让乡村的发展被更多人看到</p>
+        </div>
+    </footer>
+
+    <!-- 用于将鼠标滚轮的上下滚动转换为容器的左右滚动 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const scrollContainer = document.getElementById('scroll-container');
+            
+            scrollContainer.addEventListener('wheel', function(event) {
+                // 判断是否产生了滚轮事件（deltaY 代表垂直滚动量）
+                if (event.deltaY !== 0) {
+                    // 阻止页面整体随滚轮向下滚动
+                    event.preventDefault();
+                    // 将垂直滚动量赋值给容器的水平滚动位置 (scrollLeft)
+                    scrollContainer.scrollLeft += event.deltaY;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
