@@ -7,44 +7,60 @@ export default {
     // 获取路径
     const path = url.pathname;
 
-    // 首页测试
-    if(path==="/"){
-      return new Response("Worker is running");
-    } 
-
-    const allowPaths=[
-      "/wiki",
-      "/wiki/",
-      "/w",
-      "/w/",
-      "/static/",
-      "/upload/",
-      "/wikidata/"
-    ];
-
-    let allowed=false;
-
-    for(const p of allowPaths){
-      if(path.startsWith(p)){
-        allowed=true;
-        break;
-      }
-    }
-
-    if(!allowed){
-      return new Response("Forbidden",{status:403});
-    }
+    // 智能路径放行
+    const parts = path.split('/').filter(Boolean);
+    const firstPart = parts[0]; // 提取第一级目录 (如 "zh", "en", "portal", "w")
 
     // 动态分发目标域名 (修复图片和 Wikidata 路由)
-    let targetHost = "https://zh.wikipedia.org";
+    let targetHost = "https://www.wikipedia.org";
     let targetPath = path;
 
-    if (path.startsWith("/upload/")) {
+    // 正则匹配路径开头的语言代码，例如 /en/wiki/ 其中的 en
+    const langMatch = path.match(/^\/([a-z]{2,3})(-[a-z]+)?(\/.*)?$/);
+
+    if (firstPart === "upload") {
       targetHost = "https://upload.wikimedia.org";
-      targetPath = path.replace("/upload", ""); // 移除前缀，还原真实路径
-    } else if (path.startsWith("/wikidata/")) {
+      targetPath = path.replace("/upload", "");
+    } else if (firstPart === "wikidata") {
       targetHost = "https://www.wikidata.org";
-      targetPath = path.replace("/wikidata", ""); // 移除前缀，还原真实路径
+      targetPath = path.replace("/wikidata", "");
+    } else if (firstPart === "portal" || firstPart === "static" || firstPart === "w") {
+      // 公共静态资源目录：优先通过 Referer 识别当前页面所属的语种站
+      targetHost = "https://www.wikipedia.org";
+      
+      const referer = request.headers.get("Referer");
+      if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          if (refUrl.host === url.host) {
+            const refParts = refUrl.pathname.split('/').filter(Boolean);
+            const refFirstPart = refParts[0];
+            // 如果来源页带有语言前缀，资源请求同步跟随该语言域名
+            if (refFirstPart && !['w', 'static', 'upload', 'wikidata', 'portal', 'wiki'].includes(refFirstPart) && refFirstPart.length <= 8) {
+              targetHost = `https://${refFirstPart}.wikipedia.org`;
+            }
+          }
+        } catch (e) {}
+      }
+    } else if (firstPart && !['wiki'].includes(firstPart) && firstPart.length <= 8) {
+      // 显式声明的语言代码路径
+      targetHost = `https://${firstPart}.wikipedia.org`;
+      targetPath = path.substring(firstPart.length + 1) || "/";
+    } else {
+      // 隐式相对路径 (如点击了无前缀的 /wiki/Article)
+      const referer = request.headers.get("Referer");
+      if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          if (refUrl.host === url.host) {
+            const refParts = refUrl.pathname.split('/').filter(Boolean);
+            const refFirstPart = refParts[0];
+            if (refFirstPart && !['w', 'static', 'upload', 'wikidata', 'portal', 'wiki'].includes(refFirstPart) && refFirstPart.length <= 8) {
+              targetHost = `https://${refFirstPart}.wikipedia.org`;
+            }
+          }
+        } catch (e) {}
+      }
     }
 
     // 拼接最终的 URL，必须带上 url.search
@@ -90,9 +106,16 @@ export default {
     modifiedHeaders.delete("Content-Security-Policy-Report-Only");
     modifiedHeaders.delete("X-Frame-Options");
 
-    const contentType = response.headers.get("content-type") || "";
+    // 如果原站发出重定向，将其重定向地址也重写为代理路径，防止逃逸
+    if (modifiedHeaders.has("Location")) {
+      let loc = modifiedHeaders.get("Location");
+      loc = loc.replace(/https?:\/\/([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
+      loc = loc.replace(/\/\/([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
+      modifiedHeaders.set("Location", loc);
+    }
 
     // 重写 HTML 及 JS 和 CSS
+    const contentType = response.headers.get("content-type") || "";
     const isTextContent = contentType.includes("text/html") || 
                           contentType.includes("application/javascript") || 
                           contentType.includes("text/javascript") || 
@@ -100,21 +123,23 @@ export default {
                           contentType.includes("text/css");
 
     if (isTextContent) {
-      let text = await response.text();
+        let text = await response.text();
 
-      // 全局替换官方域名，强制浏览器后续的所有加载请求全部走 Worker
-      text = text.replaceAll("https://zh.wikipedia.org", "");
-      text = text.replaceAll("//zh.wikipedia.org", "");
-      text = text.replaceAll("//upload.wikimedia.org", "/upload");
-      text = text.replaceAll("https://upload.wikimedia.org", "/upload");
-      text = text.replaceAll("//www.wikidata.org", "/wikidata");
+        // 全局替换官方域名，强制浏览器后续的所有加载请求全部走 Worker
+        text = text.replace(/https?:\/\/(?!www)([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
+        text = text.replace(/\/\/(?!www)([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
 
-      // 确保返回清洗后的响应头
-      return new Response(text, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: modifiedHeaders
-      });
+        text = text.replaceAll("//upload.wikimedia.org", "/upload");
+        text = text.replaceAll("https://upload.wikimedia.org", "/upload");
+        text = text.replaceAll("//www.wikidata.org", "/wikidata");
+        text = text.replaceAll("https://www.wikidata.org", "/wikidata");
+
+        // 确保返回清洗后的响应头
+        return new Response(text, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: modifiedHeaders
+        });
     }
 
     // 图片、字体等二进制资源，直接带上新响应头返回
