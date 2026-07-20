@@ -1,0 +1,29 @@
+/* 美化维基百科页面 */
+.wiki-content table, 
+table.wikitable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 0.95rem;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+table.wikitable th {
+    background-color: #f4f6f8;
+    color: #333;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 15px;
+    border: 1px solid #e1e4e8;
+}
+
+table.wikitable td {
+    padding: 12px 15px;
+    border: 1px solid #e1e4e8;
+    color: #444;
+}
+
+/* 斑马纹效果，让大表格更易读 */
+table.wikitable tr:nth-child(even) {
+    background-color: #f9fbfd;
+}
