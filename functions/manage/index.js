@@ -22,6 +22,7 @@ export async function onRequest(context) {
     return new Response("Method Not Allowed", { status: 405 });
 }
 
+// 前端渲染
 export async function renderAuthPage() {
   const html = `
   <!DOCTYPE html>
@@ -119,13 +120,40 @@ export async function renderAuthPage() {
               transition:.3s; 
           }
           button:hover { background:#1b5e20; }
+          button:disabled { background:#a5d6a7; cursor:not-allowed; }
 
           .toggle-form { display:none; }
           .toggle-form.active { display:block; }
           #info-box { margin-top:15px; text-align:center; font-size:14px; min-height:20px; }
+
+            /* 淡出 Toast 弹窗样式 */
+            .toast {
+                position: fixed;
+                top: 30px;
+                left: 50%;
+                transform: translateX(-50%) translateY(-20px);
+                background: rgba(211, 47, 47, 0.9);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.4s ease, transform 0.4s ease;
+            }
+            .toast.show {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
       </style>
   </head>
   <body>
+
+    <!-- 弹窗挂载点 -->
+    <div id="toast" class="toast"></div>
+
   <div class="container">
       <div class="tabs">
           <div class="tab active" id="tab-login" onclick="switchTab('login')">用户登录</div>
@@ -142,26 +170,48 @@ export async function renderAuthPage() {
               <label>密码</label>
               <input type="password" id="login-pass" placeholder="请输入密码">
           </div>
-          <button onclick="handleAuth('login')">立即登录</button>
+          <button id="btn-login" onclick="handleAuth('login')">立即登录</button>
       </div>
 
       <!-- 注册表单 -->
       <div id="form-reg" class="toggle-form">
           <div class="form-group">
               <label>设置用户名</label>
-              <input type="text" id="reg-user" placeholder="字母或数字组合">
+              <input type="text" id="reg-user" placeholder="整个响当当的大名吧">
           </div>
           <div class="form-group">
               <label>设置密码</label>
               <input type="password" id="reg-pass" placeholder="强密码格式">
           </div>
-          <button onclick="handleAuth('register')">提交注册</button>
+          <button id="btn-reg" onclick="handleAuth('register')">提交注册</button>
       </div>
 
       <div id="info-box"></div>
   </div>
 
   <script>
+        // Toast 淡出弹窗控制逻辑
+        let toastTimer = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500); // 2.5 秒后自动淡出隐藏
+        }
+
+        // 密码强度检测函数：必须同时包含大写字母、小写字母、数字和特殊字符
+        function isStrongPassword(pass) {
+            const hasUpper = /[A-Z]/.test(pass);
+            const hasLower = /[a-z]/.test(pass);
+            const hasNumber = /[0-9]/.test(pass);
+            const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+            return hasUpper && hasLower && hasNumber && hasSpecial;
+        }
+
       function switchTab(type) {
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           document.querySelectorAll('.toggle-form').forEach(f => f.classList.remove('active'));
@@ -186,6 +236,12 @@ export async function renderAuthPage() {
               infoBox.style.color = "red"; 
               infoBox.innerText = "请完整填写用户名和密码"; 
               return; 
+          }
+
+          // 注册时触发密码强度判定
+          if (action === 'register' && !isStrongPassword(pass)) {
+              showToast("您的密码复杂度不够，请重新设置");
+              return;
           }
           
           btn.disabled = true;
@@ -244,6 +300,15 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// 校验密码强度的服务端后备函数
+function checkPasswordStrength(pass) {
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+    return hasUpper && hasLower && hasNumber && hasSpecial;
+}
+
 // 注册处理逻辑（写入 KV）
 async function handleRegister(request, env) {
     try {
@@ -255,6 +320,11 @@ async function handleRegister(request, env) {
         const { user, pass } = await request.json();
         if (!user || !pass) {
             return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
+        }
+
+        // 服务端二次校验密码强度，防止越过前端提交
+        if (!checkPasswordStrength(pass)) {
+            return Response.json({ success: false, msg: "您的密码复杂度不够，请重新设置" }, { status: 400 });
         }
 
         const userKey = `user:${user}`;
