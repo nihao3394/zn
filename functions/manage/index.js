@@ -241,7 +241,7 @@ export async function renderAuthPage() {
                 <label>注册申请说明/附加表单</label>
                 <textarea id="reg-remark" rows="2" placeholder="请填写申请加入的理由或表单信息"></textarea>
           </div>
-          <button id="btn-reg" onclick="handleAuth('register')">提交注册</button>
+          <button class="submit-btn" id="btn-reg" onclick="handleAuth('register')">提交注册</button>
       </div>
 
       <!-- 管理员审核面板 -->
@@ -321,13 +321,12 @@ export async function renderAuthPage() {
 
         // 发送邮箱验证码逻辑
         let countdown = 0;
-        async function sendEmailCode() {
-            // 根据场景获取邮箱输入框
+        <span style="text-decoration: underline wavy; text-decoration-color: #2e7d32;">async function sendEmailCode(actionType = 'register') {
             const emailId = actionType === 'login' ? 'login-identifier' : 'reg-email';
-            const btnId = actionType === 'login' ? 'btn-login-send-code' : 'btn-reg-send-code';
+            const btnId = actionType === 'login' ? 'btn-login-send-code' : 'btn-send-code';
 
-            const email = document.getElementById('reg-email').value.trim();
-            const btn = document.getElementById('btn-send-code');
+            const email = document.getElementById(emailId).value.trim();
+            const btn = document.getElementById(btnId);</span>
 
             if (!email || !/\S+@\S+\.\S+/.test(email)) {
                 showToast("请输入正确的邮箱地址");
@@ -339,8 +338,7 @@ export async function renderAuthPage() {
                 const res = await fetch('./api/send-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // 向后端传递 actionType，便于判断验证发送场景
-                    body: JSON.stringify({ email, action: actionType })
+                    <span style="text-decoration: underline wavy; text-decoration-color: #2e7d32;">body: JSON.stringify({ email, action: actionType })</span>
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -404,6 +402,8 @@ export async function renderAuthPage() {
 
           // 注册时触发密码强度判定
           if (action === 'register') {
+                const user = document.getElementById('reg-user').value.trim();
+                const pass = document.getElementById('reg-pass').value.trim();
                 const email = document.getElementById('reg-email').value.trim();
                 const code = document.getElementById('reg-code').value.trim();
                 const remark = document.getElementById('reg-remark').value.trim();
@@ -537,6 +537,23 @@ function checkPasswordStrength(pass) {
     return hasUpper && hasLower && hasNumber && hasSpecial;
 }
 
+// 管理员身份校验中间件辅助函数
+async function checkAdmin(request, env) {
+    const cookie = request.headers.get("Cookie");
+    if (!cookie) return false;
+    const match = cookie.match(/session=([^;]+)/);
+    if (!match) return false;
+    const sessionId = match[1];
+    const sessionData = await env.USER_DB.get(`session:${sessionId}`);
+    if (!sessionData) return false;
+    try {
+        const user = JSON.parse(sessionData);
+        return user.role === "admin";
+    } catch (e) {
+        return false;
+    }
+}
+
 // 发送邮箱验证码处理逻辑
 async function handleSendCode(request, env) {
     try {
@@ -546,6 +563,13 @@ async function handleSendCode(request, env) {
         const { email, action } = await request.json();
         if (!email || !/\\S+@\\S+\\.\\S+/.test(email)) {
             return Response.json({ success: false, msg: "邮箱格式不正确" }, { status: 400 });
+        }
+
+        // 验证码发送频率限制（防刷、防邮箱轰炸）
+        const limitKey = `limit:code:${email}`;
+        const limited = await KV.get(limitKey);
+        if (limited) {
+            return Response.json({ success: false, msg: "发送过于频繁，请 60 秒后再试" }, { status: 429 });
         }
 
         if (action === 'login') {
@@ -558,10 +582,11 @@ async function handleSendCode(request, env) {
         // 生成 6 位随机数字验证码
         const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // 存入 Cloudflare KV，设置有效期为 300 秒（5 分钟）
-        await KV.put(`code:${email}`, code, { expirationTtl: 300 });
+        // 验证码用途隔离（区分 register 与 login，避免相互覆盖）
+        const actionType = action || 'register';
+        await KV.put(`code:${actionType}:${email}`, code, { expirationTtl: 300 });
+        await KV.put(limitKey, "1", { expirationTtl: 60 });
 
-        // 发送邮件实现逻辑（如果配置了 RESEND_API_KEY 服务环境变量）
         if (env.RESEND_API_KEY) {
             await fetch('https://api.resend.com/emails', {
                 method: 'POST',
@@ -572,8 +597,8 @@ async function handleSendCode(request, env) {
                 body: JSON.stringify({
                     from: 'System <onboarding@resend.dev>',
                     to: [email],
-                    subject: '注册验证码',
-                    html: `<p>您的注册验证码为：<strong>${code}</strong>，有效期 5 分钟。</p>`
+                    subject: '验证码',
+                    html: `<p>您的验证码为：<strong>${code}</strong>，有效期 5 分钟。</p>`
                 })
             });
         }
@@ -587,7 +612,7 @@ async function handleSendCode(request, env) {
 // 提交注册申请
 async function handleRegister(request, env) {
     try {
-        const KV = env.USER_DB; // 💡 适配你的 Cloudflare USER_DB 绑定
+        const KV = env.USER_DB; 
         if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
 
         const { user, pass, email, code, remark } = await request.json();
@@ -603,7 +628,7 @@ async function handleRegister(request, env) {
         }
 
         // 校验邮箱验证码正确性
-        const savedCode = await KV.get(`code:${email}`);
+        const savedCode = await KV.get(`code:register:${email}`);
         if (!savedCode || savedCode !== code) {
             return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 400 });
         }
@@ -634,8 +659,8 @@ async function handleRegister(request, env) {
             user
         );
 
-        // 成功注册后销毁已使用的验证码
-        await KV.delete(`code:${email}`);
+        // 成功注册后销毁已使用的注册验证码
+        await KV.delete(`code:register:${email}`);
 
         return Response.json({ success: true, msg: "注册申请已提交！请等待管理员审核后再登录" });
     } catch (e) {
@@ -671,15 +696,14 @@ async function handleLogin(request, env) {
 
         // 验证身份（优先校验验证码，若没传验证码则校验密码）
         if (code) {
-            // 注意：如果是用纯用户名登录，但强行通过 API 传了验证码参数，需要用数据里的 email 去比对
             if (!targetEmail) targetEmail = userData.email; 
-            const savedCode = await KV.get(`code:${targetEmail}`);
+            const savedCode = await KV.get(`code:login:${targetEmail}`);
             
             if (!savedCode || savedCode !== code) {
                 return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 401 });
             }
             // 验证码通过后立即销毁
-            await KV.delete(`code:${targetEmail}`);
+            await KV.delete(`code:login:${targetEmail}`);
         } else if (pass) {
             const hashedPass = await hashPassword(pass);
             if (userData.password !== hashedPass) {
@@ -698,10 +722,26 @@ async function handleLogin(request, env) {
             return Response.json({ success: false, msg: "您的注册申请已被管理员驳回" }, { status: 403 });
         }
 
-        return Response.json({ 
+        // 登录成功：生成 Session 并通过 Set-Cookie 安全下发给浏览器
+        const sessionId = crypto.randomUUID();
+        await KV.put(
+            `session:${sessionId}`,
+            JSON.stringify({
+                user: targetEmail || identifier,
+                role: userData.role || "member"
+            }),
+            { expirationTtl: 3600 } // Session 有效期 1 小时
+        );
+
+        return new Response(JSON.stringify({ 
             success: true, 
             msg: "登录成功！", 
             role: userData.role || "member" 
+        }), {
+            headers: {
+                "Content-Type": "application/json",
+                "Set-Cookie": `session=${sessionId}; HttpOnly; Secure; SameSite=Strict; Path=/`
+            }
         });
     } catch (e) {
         return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
@@ -711,6 +751,11 @@ async function handleLogin(request, env) {
 // 管理员拉取待审核名单
 async function handleGetPendingUsers(request, env) {
     try {
+        // 增加管理员身份权限校验拦截
+        if (!(await checkAdmin(request, env))) {
+            return Response.json({ success: false, msg: "权限不足，拒绝访问" }, { status: 403 });
+        }
+
         const KV = env.USER_DB;
         const listRes = await KV.list({ prefix: "user:" });
         const pendingList = [];
@@ -738,6 +783,11 @@ async function handleGetPendingUsers(request, env) {
 // 管理员通过审核
 async function handleApproveUser(request, env) {
     try {
+        // 增加管理员身份权限校验拦截
+        if (!(await checkAdmin(request, env))) {
+            return Response.json({ success: false, msg: "权限不足，拒绝访问" }, { status: 403 });
+        }
+
         const KV = env.USER_DB;
         const { targetUser } = await request.json();
         const userKey = `user:${targetUser}`;
@@ -758,6 +808,11 @@ async function handleApproveUser(request, env) {
 // 管理员拒绝驳回申请
 async function handleRejectUser(request, env) {
     try {
+        // 增加管理员身份权限校验拦截
+        if (!(await checkAdmin(request, env))) {
+            return Response.json({ success: false, msg: "权限不足，拒绝访问" }, { status: 403 });
+        }
+
         const KV = env.USER_DB;
         const { targetUser } = await request.json();
         const userKey = `user:${targetUser}`;
@@ -766,6 +821,7 @@ async function handleRejectUser(request, env) {
         if (!raw) return Response.json({ success: false, msg: "未找到该用户数据" });
 
         // 直接从数据库清除该用户的申请记录（或标记为 rejected）
+        const userData = JSON.parse(raw);
         await KV.delete(userKey);
         if (userData.email) {
             await KV.delete(`email:${userData.email}`); // 驳回时同步清理绑定的邮箱映射
@@ -773,6 +829,6 @@ async function handleRejectUser(request, env) {
 
         return Response.json({ success: true, msg: "已驳回该申请记录" });
     } catch (e) {
-        return Response.json({ success: false, msg: "操作失败" });
+        return Response.json({ success: false, msg: "操作失败" }, { status: 500 });
     }
 }
