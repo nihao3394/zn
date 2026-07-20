@@ -55,17 +55,27 @@ export async function onRequestPost(context) {
 
             // 创建动态 Session 并存入 KV（有效期 1 小时）
             const session = crypto.randomUUID();
-            await KV.put(`session:${session}`,
-                JSON.stringify({ created: Date.now(), ip: clientIp }),
-                { expirationTtl: 3600 }
-            );
+            await KV.put(
+                `session:${session}`,
+                JSON.stringify({
+
+                created:Date.now(),
+
+                ip:clientIp,  // 保存来源IP用于审计
+                role:"gate",  // 角色字段
+                lastActive:Date.now()  // 最后活动时间
+            }),
+            {
+                expirationTtl:3600
+            }
+        );
 
             // 植入 HttpOnly 通行 Cookie 并返回成功
             return new Response(JSON.stringify({ success: true, msg: "已验证，正在加载登录面板..." }), {
                 status: 200,
                 headers: {
                 "Content-Type": "application/json",
-                "Set-Cookie": `gate_pass=${session}; Path=/manage; HttpOnly; Secure; SameSite=Strict`
+                "Set-Cookie": `gate_pass=${session}; Path=/manage; HttpOnly; Secure; SameSite=Strict; Max-Age=3600`
                 }
             });
         }
@@ -87,7 +97,7 @@ export async function onRequestPost(context) {
 
             // 计算 KV 保留这套数据的最大寿命（增加一个安全缓冲期，确保在封禁期内数据不丢）
             const ttl = Math.max(60, lockoutSeconds + 600); 
-             await KV.put(kvKey, JSON.stringify(rateData), { expirationTtl: ttl });
+            await KV.put(kvKey, JSON.stringify(rateData), { expirationTtl: ttl });
 
             return new Response(JSON.stringify({ 
                 success: false, 

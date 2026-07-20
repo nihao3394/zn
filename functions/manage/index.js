@@ -338,7 +338,7 @@ export async function renderAuthPage() {
                 const res = await fetch('./api/send-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    <span style="text-decoration: underline wavy; text-decoration-color: #2e7d32;">body: JSON.stringify({ email, action: actionType })</span>
+                    body: JSON.stringify({ email, action: actionType })
                 });
                 const data = await res.json();
                 if (data.success) {

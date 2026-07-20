@@ -25,13 +25,47 @@ export async function onRequest(context) {
 
         // KV 未绑定或 Session 无效，同样报 404
         if (!KV) {
-        return new Response("404 Not Found", { status: 404 });
-        }
-
-        const exists = await KV.get(`session:${session}`);
-        if (!exists) {
             return new Response("404 Not Found", { status: 404 });
         }
+
+        const sessionRaw = await KV.get(`session:${session}`);
+
+        if(!sessionRaw){
+            return new Response("404 Not Found", {status:404});
+        }
+
+        let sessionData;
+
+        try {
+            sessionData = JSON.parse(sessionRaw);  // 防止KV数据损坏导致异常
+        } catch(e) {
+            return new Response("404 Not Found", {status:404});
+        }
+
+        // 检查session结构
+        if(
+            !sessionData.created ||
+            !sessionData.role
+        ){
+
+            return new Response(
+                "404 Not Found",
+                {status:404}
+            );
+
+        }
+
+        // 滑动续期
+        await KV.put(
+            `session:${session}`,
+            JSON.stringify({
+                ...sessionData,
+                lastActive:Date.now()
+            }),
+            {
+                expirationTtl:3600
+            }
+        );
 
         // 校验通过，放行进入 /manage/ 面板
         return next();
