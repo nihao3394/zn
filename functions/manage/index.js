@@ -328,6 +328,8 @@ export async function renderAuthPage() {
             const email = document.getElementById(emailId).value.trim();
             const btn = document.getElementById(btnId);
 
+            console.log(JSON.stringify(email));
+
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 showToast("请输入正确的邮箱地址");
                 return;
