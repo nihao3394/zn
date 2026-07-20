@@ -181,7 +181,7 @@ export async function renderAuthPage() {
           </div>
           <div class="form-group">
               <label>设置密码</label>
-              <input type="password" id="reg-pass" placeholder="强密码格式">
+              <input type="password" id="reg-pass" placeholder="需要同时包含大小写字母、数字和特殊字符">
           </div>
           <button id="btn-reg" onclick="handleAuth('register')">提交注册</button>
       </div>
@@ -312,7 +312,7 @@ function checkPasswordStrength(pass) {
 // 注册处理逻辑（写入 KV）
 async function handleRegister(request, env) {
     try {
-        const KV = env.USER_KV;
+        const KV = env.USER_DB;
         if (!KV) {
             return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
         }
@@ -351,7 +351,7 @@ async function handleRegister(request, env) {
 // 登录处理逻辑（读取 KV 并比对）
 async function handleLogin(request, env) {
     try {
-        const KV = env.USER_KV;
+        const KV = env.USER_DB;
         if (!KV) {
             return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
         }
