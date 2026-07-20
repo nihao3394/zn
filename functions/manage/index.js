@@ -455,7 +455,7 @@ export async function renderAuthPage() {
           infoBox.innerText = action === 'login' ? "正在验证身份..." : "正在提交注册申请...";
 
           try {
-              const res = await fetch(\`/api/\${action}\`, {
+              const res = await fetch(window.location.origin + \`/api/\${action}\`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
