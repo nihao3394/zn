@@ -1,4 +1,28 @@
-export async function onRequestGet(context) {
+// 主路由入口：统一分发 GET（页面）与 POST（接口）请求
+export async function onRequest(context) {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+
+    // 📌 POST 请求处理：注册与登录 API
+    if (request.method === "POST") {
+        if (pathname.endsWith("/api/register")) {
+            return handleRegister(request, env);
+        }
+        if (pathname.endsWith("/api/login")) {
+            return handleLogin(request, env);
+        }
+    }
+
+    // 📌 GET 请求处理：渲染登录/注册 UI 界面
+    if (request.method === "GET") {
+        return renderAuthPage();
+    }
+
+    return new Response("Method Not Allowed", { status: 405 });
+}
+
+export async function renderAuthPage() {
   const html = `
   <!DOCTYPE html>
   <html lang="zh-CN">
@@ -151,24 +175,138 @@ export async function onRequestGet(context) {
           document.getElementById('info-box').innerText = "";
       }
 
+      // 真实请求 KV 后端 API
       async function handleAuth(action) {
           const infoBox = document.getElementById('info-box');
-          const user = document.getElementById(action === 'login' ? 'login-user' : 'reg-user').value;
-          const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
+          const user = document.getElementById(action === 'login' ? 'login-user' : 'reg-user').value.trim();
+          const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value.trim();
+          const btn = document.getElementById(action === 'login' ? 'btn-login' : 'btn-reg');
 
-          if(!user || !pass) { infoBox.style.color = "red"; infoBox.innerText = "请完整填写各项内容"; return; }
-          infoBox.style.color = "#666"; infoBox.innerText = "正在处理...";
-
-          console.log(\`发起 \${action} 请求: \`, { user, pass });
+          if(!user || !pass) { 
+              infoBox.style.color = "red"; 
+              infoBox.innerText = "请完整填写用户名和密码"; 
+              return; 
+          }
           
-          setTimeout(() => {
-              infoBox.style.color = "green";
-              infoBox.innerText = action === 'login' ? "登录成功！" : "注册成功！";
-          }, 800);
+          btn.disabled = true;
+          infoBox.style.color = "#666"; 
+          infoBox.innerText = action === 'login' ? "正在验证身份..." : "正在创建账号...";
+
+          try {
+              // 使用相对路径请求当前模块下的 API
+              const res = await fetch(\`/api/\${action}\`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ user, pass })
+              });
+              const data = await res.json();
+
+              if(res.ok && data.success) {
+                  infoBox.style.color = "green";
+                  infoBox.innerText = data.msg;
+                  
+                  if(action === 'register') {
+                      setTimeout(() => {
+                          switchTab('login');
+                          document.getElementById('login-user').value = user;
+                          btn.disabled = false;
+                      }, 1200);
+                  } else {
+                      // 登录成功后可根据需要自行调整成功后的跳转逻辑
+                      setTimeout(() => { alert("登录成功！"); }, 500);
+                  }
+              } else {
+                  infoBox.style.color = "red";
+                  infoBox.innerText = data.msg || "请求失败";
+                  btn.disabled = false;
+              }
+          } catch(e) {
+              infoBox.style.color = "red";
+              infoBox.innerText = "网络异常或服务端报错";
+              btn.disabled = false;
+          }
       }
   </script>
   </body>
   </html>
   `;
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+// ---------------- 后端 API 与 KV 数据交互 ----------------
+
+// SHA-256 密码加密
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 注册处理逻辑（写入 KV）
+async function handleRegister(request, env) {
+    try {
+        const KV = env.USER_KV;
+        if (!KV) {
+            return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
+        }
+
+        const { user, pass } = await request.json();
+        if (!user || !pass) {
+            return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
+        }
+
+        const userKey = `user:${user}`;
+        
+        // 查询数据库判断用户是否存在
+        const existingUser = await KV.get(userKey);
+        if (existingUser) {
+            return Response.json({ success: false, msg: "该用户名已被注册" }, { status: 400 });
+        }
+
+        // 哈希密码并持久化存入 KV
+        const hashedPass = await hashPassword(pass);
+        await KV.put(userKey, JSON.stringify({
+            password: hashedPass,
+            createdAt: new Date().toISOString()
+        }));
+
+        return Response.json({ success: true, msg: "注册成功！即将切换至登录" });
+    } catch (e) {
+        return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
+    }
+}
+
+// 登录处理逻辑（读取 KV 并比对）
+async function handleLogin(request, env) {
+    try {
+        const KV = env.USER_KV;
+        if (!KV) {
+            return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
+        }
+
+        const { user, pass } = await request.json();
+        if (!user || !pass) {
+            return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
+        }
+
+        const userKey = `user:${user}`;
+        const userDataRaw = await KV.get(userKey);
+
+        if (!userDataRaw) {
+            return Response.json({ success: false, msg: "用户名或密码错误" }, { status: 401 });
+        }
+
+        const userData = JSON.parse(userDataRaw);
+        const hashedPass = await hashPassword(pass);
+
+        if (userData.password !== hashedPass) {
+            return Response.json({ success: false, msg: "用户名或密码错误" }, { status: 401 });
+        }
+
+        return Response.json({ success: true, msg: "验证通过，登录成功！" });
+    } catch (e) {
+        return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
+    }
 }
