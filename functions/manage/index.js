@@ -22,6 +22,24 @@ export async function onRequest(context) {
     return new Response("Method Not Allowed", { status: 405 });
 }
 
+// 通用邮箱归一化与校验函数
+function cleanAndValidateEmail(rawEmail) {
+    if (!rawEmail) return { valid: false, email: "" };
+    
+    // 归一化：去空格、转小写、替换全角字符和中文句号
+    const email = rawEmail
+        .trim()
+        .toLowerCase()
+        .replace(/＠/g, "@")
+        .replace(/．/g, ".")
+        .replace(/。/g, ".");
+
+    // 使用不依赖 \s 反斜杠转义的兼容正则，防止模板字符串渲染错误
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.includes(' ');
+    
+    return { valid: isValid, email };
+}
+
 // 前端渲染
 export async function renderAuthPage() {
   const html = `
@@ -320,17 +338,25 @@ export async function renderAuthPage() {
         }
 
         // 发送邮箱验证码逻辑
+        function parseEmail(inputVal) {
+            if (!inputVal) return { valid: false, email: "" };
+            const clean = inputVal.trim().toLowerCase().replace(/＠/g, "@").replace(/．/g, ".").replace(/。/g, ".");
+            // 避开 \\s 转义问题的通用正则
+            const isValid = /^[^@ ]+@[^@ ]+\.[^@ ]+$/.test(clean);
+            return { valid: isValid, email: clean };
+        }
+
+        // 发送邮箱验证码逻辑
         let countdown = 0;
         async function sendEmailCode(actionType = 'register') {
             const emailId = actionType === 'login' ? 'login-identifier' : 'reg-email';
             const btnId = actionType === 'login' ? 'btn-login-send-code' : 'btn-send-code';
 
-            const email = document.getElementById(emailId).value.trim();
+            const rawVal = document.getElementById(emailId).value;
+            const { valid, email } = parseEmail(rawVal);
             const btn = document.getElementById(btnId);
 
-            console.log(JSON.stringify(email));
-
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (!valid) {
                 showToast("请输入正确的邮箱地址");
                 return;
             }
@@ -568,7 +594,7 @@ async function handleSendCode(request, env) {
         if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
 
         const { email, action } = await request.json();
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!email || !/^[^@ ]+@[^@ ]+\.[^@ ]+$/.test(email)) {
             return Response.json({ success: false, msg: "邮箱格式不正确" }, { status: 400 });
         }
 
