@@ -238,8 +238,8 @@ export async function renderAuthPage() {
                 </div>
           </div>
           <div class="form-group">
-                <label>注册申请说明/附加表单</label>
-                <textarea id="reg-remark" rows="2" placeholder="请填写申请加入的理由或表单信息"></textarea>
+                <label>注册申请说明</label>
+                <textarea id="reg-remark" rows="2" placeholder="请填写申请加入的理由"></textarea>
           </div>
           <button class="submit-btn" id="btn-reg" onclick="handleAuth('register')">提交注册</button>
       </div>
@@ -328,7 +328,7 @@ export async function renderAuthPage() {
             const email = document.getElementById(emailId).value.trim();
             const btn = document.getElementById(btnId);
 
-            if (!email || !/\S+@\S+\.\S+/.test(email)) {
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 showToast("请输入正确的邮箱地址");
                 return;
             }
@@ -567,7 +567,7 @@ async function handleSendCode(request, env) {
         if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
 
         const { email, action } = await request.json();
-        if (!email || !/\\S+@\\S+\\.\\S+/.test(email)) {
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return Response.json({ success: false, msg: "邮箱格式不正确" }, { status: 400 });
         }
 
