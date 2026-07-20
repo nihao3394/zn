@@ -8,22 +8,98 @@ export async function onRequestGet(context) {
       <title>系统管理中心 - 注册与登录</title>
       <meta name="viewport" content="width=device-width,initial-scale=1.0">
       <style>
-          /* 延续系统的整体视觉，保证一贯的精致感 */
           * { margin:0; padding:0; box-sizing:border-box; }
-          body { height:100vh; font-family:"Helvetica Neue",Arial,sans-serif; background:#f4f7f6; display:flex; align-items:center; justify-content:center; color:#333; }
-          .container { width:90%; max-width:400px; background:white; padding:30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
-          .tabs { display:flex; margin-bottom:20px; border-bottom:2px solid #eee; }
-          .tab { flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color:#777; }
-          .tab.active { color:#2e7d32; border-bottom:2px solid #2e7d32; }
-          .form-group { margin-bottom:15px; }
-          label { display:block; margin-bottom:5px; font-size:14px; color:#555; }
-          input { width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; outline:none; font-size:14px; }
-          input:focus { border-color:#2e7d32; }
-          button { width:100%; padding:12px; background:#2e7d32; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px; margin-top:10px; }
+          
+          body { 
+              height:100vh; 
+              font-family:"Helvetica Neue",Arial,sans-serif; 
+              background:#131c15; 
+              display:flex; 
+              align-items:center; 
+              justify-content:center; 
+              color:#e0e0e0; 
+              overflow:hidden;
+              position:relative;
+          }
+
+          /*左上角深绿圆形几何体 */
+          body::before { 
+              content:""; 
+              position:absolute; 
+              width:420px; 
+              height:420px; 
+              background:#1e3b25; 
+              border-radius:50%; 
+              top:-130px; 
+              left:-130px; 
+              opacity:.75; 
+          }
+
+          /*右下角旋转圆角几何体 */
+          body::after { 
+              content:""; 
+              position:absolute; 
+              width:380px; 
+              height:380px; 
+              background:#1e3b25; 
+              border-radius:28%; 
+              bottom:-110px; 
+              right:-110px; 
+              transform:rotate(30deg); 
+              opacity:.75; 
+          }
+
+          /*居中卡片容器（提升 z-index 浮于几何体之上） */
+          .container { 
+              position:relative; 
+              width:90%; 
+              max-width:400px; 
+              background:#1a1e1c; 
+              padding:32px 30px; 
+              border-radius:12px; 
+              box-shadow:0 8px 25px rgba(0,0,0,0.4); 
+              z-index:10; 
+          }
+
+          .tabs { display:flex; margin-bottom:22px; border-bottom:1px solid #2e3832; }
+          .tab { flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color:#888; transition:.2s; }
+          .tab.active { color:#4caf50; border-bottom:2px solid #4caf50; }
+          .tab:hover { color:#a5d6a7; }
+
+          .form-group { margin-bottom:16px; }
+          label { display:block; margin-bottom:6px; font-size:14px; color:#aaa; }
+          
+          input { 
+              width:100%; 
+              padding:12px 14px; 
+              background:#262b29; 
+              border:1px solid #38423c; 
+              border-radius:6px; 
+              outline:none; 
+              font-size:14px; 
+              color:#fff; 
+              transition:.2s;
+          }
+          input:focus { border-color:#4caf50; background:#2c3330; }
+
+          button { 
+              width:100%; 
+              padding:12px; 
+              background:#2e7d32; 
+              color:white; 
+              border:none; 
+              border-radius:6px; 
+              cursor:pointer; 
+              font-size:16px; 
+              margin-top:10px; 
+              font-weight:500;
+              transition:.3s; 
+          }
           button:hover { background:#1b5e20; }
+
           .toggle-form { display:none; }
           .toggle-form.active { display:block; }
-          #info-box { margin-top:10px; text-align:center; font-size:14px; min-height:20px; }
+          #info-box { margin-top:14px; text-align:center; font-size:14px; min-height:20px; }
       </style>
   </head>
   <body>
@@ -81,16 +157,14 @@ export async function onRequestGet(context) {
           const user = document.getElementById(action === 'login' ? 'login-user' : 'reg-user').value;
           const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
 
-          if(!user || !pass) { infoBox.style.color="red"; infoBox.innerText="请完整填写各项内容"; return; }
-          infoBox.style.color="#666"; infoBox.innerText="正在处理...";
+          if(!user || !pass) { infoBox.style.color="#ff6b6b"; infoBox.innerText="请完整填写各项内容"; return; }
+          infoBox.style.color="#aaa"; infoBox.innerText="正在处理...";
 
-          // 这里预留后续对接真正的 KV/D1 数据库注册登录 API
           console.log(\`发起 \${action} 请求: \`, { user, pass });
           
-          // 模拟成功
           setTimeout(() => {
-              infoBox.style.color = "green";
-              infoBox.innerText = action === 'login' ? "登录成功！欢迎回来" : "注册成功！现在可以切换至登录";
+              infoBox.style.color = "#81c784";
+              infoBox.innerText = action === 'login' ? "登录成功！" : "注册成功！";
           }, 800);
       }
   </script>
