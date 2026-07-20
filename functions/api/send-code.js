@@ -77,7 +77,7 @@ export async function onRequestPost(context) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    from: 'System <onboarding@resend.dev>',
+                    from: 'System <no-reply@findingstar.com>',
                     to: [email],
                     subject: '您的验证码',
                     html: `<p>您的验证码为：<strong style="font-size: 18px; color: #2e7d32;">${code}</strong>，有效期 5 分钟。如非本人操作请忽略。</p>`
