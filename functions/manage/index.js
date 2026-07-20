@@ -4,17 +4,17 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
-    // 📌 POST 请求处理：注册与登录 API
+    // POST API 请求
     if (request.method === "POST") {
-        if (pathname.endsWith("/api/register")) {
-            return handleRegister(request, env);
-        }
-        if (pathname.endsWith("/api/login")) {
-            return handleLogin(request, env);
-        }
+        if (pathname.endsWith("/api/send-code")) return handleSendCode(request, env);
+        if (pathname.endsWith("/api/register")) return handleRegister(request, env);
+        if (pathname.endsWith("/api/login")) return handleLogin(request, env);
+        if (pathname.endsWith("/api/admin/pending-list")) return handleGetPendingUsers(request, env);
+        if (pathname.endsWith("/api/admin/approve")) return handleApproveUser(request, env);
+        if (pathname.endsWith("/api/admin/reject")) return handleRejectUser(request, env);
     }
 
-    // 📌 GET 请求处理：渲染登录/注册 UI 界面
+    // GET 请求处理：渲染登录/注册 UI 界面
     if (request.method === "GET") {
         return renderAuthPage();
     }
@@ -89,12 +89,11 @@ export async function renderAuthPage() {
           .tabs { display:flex; margin-bottom:24px; border-bottom:1px solid #eee; }
           .tab { flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color:#777; transition:.2s; }
           .tab.active { color:#2e7d32; border-bottom:2px solid #2e7d32; }
-          .tab:hover { color:#2e7d32; }
 
           .form-group { margin-bottom:16px; text-align:left; }
           label { display:block; margin-bottom:6px; font-size:14px; color:#555; }
           
-          input { 
+          input, textarea { 
               width:100%; 
               padding:14px; 
               background:#fff;
@@ -105,9 +104,28 @@ export async function renderAuthPage() {
               color:#333;
               transition:.2s;
           }
-          input:focus { border-color:#2e7d32; }
+          input:focus, textarea:focus { border-color:#2e7d32; }
 
-          button { 
+          /* 登录方式切换单选框样式 */
+          .method { display:none; margin-bottom:16px; margin-top:-6px; }
+          .method label { margin-right:20px; font-size:14px; color:#555; cursor:pointer; }
+          .method input[type="radio"] { width: auto; display: inline-block; margin-right: 4px; }
+
+            .code-row { display:flex; gap:8px; }
+            .code-row input { flex:1; }
+            .send-btn { 
+                width:120px; 
+                margin-top:0; 
+                padding:12px; 
+                font-size:13px; 
+                background:#388e3c; 
+                color:white; 
+                border:none; 
+                border-radius:8px; 
+                cursor:pointer; 
+            }
+
+          button.submit-btn { 
               margin-top:10px; 
               width:100%; 
               padding:14px; 
@@ -125,6 +143,13 @@ export async function renderAuthPage() {
           .toggle-form { display:none; }
           .toggle-form.active { display:block; }
           #info-box { margin-top:15px; text-align:center; font-size:14px; min-height:20px; }
+
+            /* 审核列表卡片样式 */
+            .user-card { border:1px solid #eee; background:#fafafa; border-radius:8px; padding:12px; margin-bottom:10px; text-align:left; }
+            .user-card p { font-size:13px; color:#666; margin-top:4px; line-height:1.4; }
+            .btn-group { display:flex; gap:8px; margin-top:10px; }
+            .approve-btn { flex:1; padding:8px; font-size:13px; background:#2e7d32; color:white; border:none; border-radius:6px; cursor:pointer; }
+            .reject-btn { flex:1; padding:8px; font-size:13px; background:#c62828; color:white; border:none; border-radius:6px; cursor:pointer; }
 
             /* 淡出 Toast 弹窗样式 */
             .toast {
@@ -158,19 +183,37 @@ export async function renderAuthPage() {
       <div class="tabs">
           <div class="tab active" id="tab-login" onclick="switchTab('login')">用户登录</div>
           <div class="tab" id="tab-reg" onclick="switchTab('reg')">新用户注册</div>
+          <div class="tab" id="tab-admin" style="display:none;" onclick="switchTab('admin')">审核面板</div>
       </div>
 
       <!-- 登录表单 -->
       <div id="form-login" class="toggle-form active">
           <div class="form-group">
-              <label>用户名</label>
-              <input type="text" id="login-user" placeholder="请输入用户名">
+              <label>用户名/电子邮箱</label>
+              <input type="text" id="login-identifier" placeholder="请输入用户名或电子邮箱" oninput="toggleLoginMode()">
           </div>
-          <div class="form-group">
-              <label>密码</label>
+
+          <!-- 动态显示的登录方式选择 -->
+          <div id="emailMethod" class="method">
+              <label>
+                  <input type="radio" name="method" id="radio-pwd" checked onclick="changeMethod('password')"> 密码登录
+              </label>
+              <label>
+                  <input type="radio" name="method" id="radio-code" onclick="changeMethod('code')"> 验证码登录
+              </label>
+          </div>
+
+          <div id="passwordBox" class="form-group">
               <input type="password" id="login-pass" placeholder="请输入密码">
           </div>
-          <button id="btn-login" onclick="handleAuth('login')">立即登录</button>
+          
+          <div id="codeBox" class="form-group" style="display:none;">
+              <div class="code-row">
+                  <input type="text" id="login-code" placeholder="6位验证码">
+                  <button class="send-btn" id="btn-login-send-code" onclick="sendEmailCode('login')">发送验证码</button>
+              </div>
+          </div>
+          <button class="submit-btn" id="btn-login" onclick="handleAuth('login')">立即登录</button>
       </div>
 
       <!-- 注册表单 -->
@@ -181,15 +224,38 @@ export async function renderAuthPage() {
           </div>
           <div class="form-group">
               <label>设置密码</label>
-              <input type="password" id="reg-pass" placeholder="需要同时包含大小写字母、数字和特殊字符">
+              <input type="password" id="reg-pass" placeholder="需同时包含大小写字母、数字和特殊字符">
+          </div>
+          <div class="form-group">
+                <label>电子邮箱</label>
+                <input type="email" id="reg-email" placeholder="请输入有效的电子邮箱">
+            </div>
+            <div class="form-group">
+                <label>邮箱验证码</label>
+                <div class="code-row">
+                    <input type="text" id="reg-code" placeholder="6位数字验证码">
+                    <button class="send-btn" id="btn-send-code" onclick="sendEmailCode()">发送验证码</button>
+                </div>
+          </div>
+          <div class="form-group">
+                <label>注册申请说明/附加表单</label>
+                <textarea id="reg-remark" rows="2" placeholder="请填写申请加入的理由或表单信息"></textarea>
           </div>
           <button id="btn-reg" onclick="handleAuth('register')">提交注册</button>
+      </div>
+
+      <!-- 管理员审核面板 -->
+        <div id="form-admin" class="toggle-form">
+            <h4 style="margin-bottom:12px; color:#2e7d32;">待审核注册名单</h4>
+            <div id="pending-list">正在加载待审核列表...</div>
       </div>
 
       <div id="info-box"></div>
   </div>
 
   <script>
+        let currentUserRole = "member";
+
         // Toast 淡出弹窗控制逻辑
         let toastTimer = null;
         function showToast(message) {
@@ -205,55 +271,167 @@ export async function renderAuthPage() {
 
         // 密码强度检测函数：必须同时包含大写字母、小写字母、数字和特殊字符
         function isStrongPassword(pass) {
-            const hasUpper = /[A-Z]/.test(pass);
-            const hasLower = /[a-z]/.test(pass);
-            const hasNumber = /[0-9]/.test(pass);
-            const hasSpecial = /[^A-Za-z0-9]/.test(pass);
-            return hasUpper && hasLower && hasNumber && hasSpecial;
+            return /[A-Z]/.test(pass) && /[a-z]/.test(pass) && /[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass);
         }
 
       function switchTab(type) {
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.toggle-form').forEach(f => f.classList.remove('active'));
-          if(type === 'login') {
-              document.getElementById('tab-login').classList.add('active');
-              document.getElementById('form-login').classList.add('active');
-          } else {
-              document.getElementById('tab-reg').classList.add('active');
-              document.getElementById('form-reg').classList.add('active');
-          }
-          document.getElementById('info-box').innerText = "";
-      }
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.toggle-form').forEach(f => f.classList.remove('active'));
+            
+            document.getElementById('tab-' + type).classList.add('active');
+            document.getElementById('form-' + type).classList.add('active');
+            document.getElementById('info-box').innerText = "";
 
-      // 真实请求 KV 后端 API
+            if(type === 'admin') loadPendingUsers();
+        }
+
+        let loginType = "password";
+
+        // 监听输入框，是邮箱则展开验证码框
+        function toggleLoginMode() {
+            const val = document.getElementById('login-identifier').value.trim();
+            const emailMethod = document.getElementById('emailMethod');
+            
+            if (val.includes('@')) {
+                emailMethod.style.display = 'block';
+            } else {
+                emailMethod.style.display = 'none';
+                // 不是邮箱时，强制退回密码登录模式
+                document.getElementById('radio-pwd').checked = true;
+                changeMethod('password');
+            }
+        }
+
+        // 切换密码/验证码登录的UI处理
+        function changeMethod(type) {
+            loginType = type;
+            const passwordBox = document.getElementById('passwordBox');
+            const codeBox = document.getElementById('codeBox');
+
+            if (type === 'password') {
+                passwordBox.style.display = 'block';
+                codeBox.style.display = 'none';
+                document.getElementById('login-code').value = ''; // 清空可能残留的验证码
+            } else {
+                passwordBox.style.display = 'none';
+                codeBox.style.display = 'block';
+                document.getElementById('login-pass').value = ''; // 清空可能残留的密码
+            }
+        }
+
+        // 发送邮箱验证码逻辑
+        let countdown = 0;
+        async function sendEmailCode() {
+            // 根据场景获取邮箱输入框
+            const emailId = actionType === 'login' ? 'login-identifier' : 'reg-email';
+            const btnId = actionType === 'login' ? 'btn-login-send-code' : 'btn-reg-send-code';
+
+            const email = document.getElementById('reg-email').value.trim();
+            const btn = document.getElementById('btn-send-code');
+
+            if (!email || !/\S+@\S+\.\S+/.test(email)) {
+                showToast("请输入正确的邮箱地址");
+                return;
+            }
+
+            btn.disabled = true;
+            try {
+                const res = await fetch('./api/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // 向后端传递 actionType，便于判断验证发送场景
+                    body: JSON.stringify({ email, action: actionType })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("验证码已发送至邮箱，请查收，有效期 5 分钟");
+                    countdown = 60;
+                    const timer = setInterval(() => {
+                        countdown--;
+                        btn.innerText = countdown + "s 后重发";
+                        if (countdown <= 0) {
+                            clearInterval(timer);
+                            btn.innerText = "发送验证码";
+                            btn.disabled = false;
+                        }
+                    }, 1000);
+                } else {
+                    showToast(data.msg || "发送失败");
+                    btn.disabled = false;
+                }
+            } catch(e) {
+                showToast("网络异常，无法发送验证码");
+                btn.disabled = false;
+            }
+        }
+
+      // 提交登录与注册表单
       async function handleAuth(action) {
           const infoBox = document.getElementById('info-box');
-          const user = document.getElementById(action === 'login' ? 'login-user' : 'reg-user').value.trim();
-          const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value.trim();
           const btn = document.getElementById(action === 'login' ? 'btn-login' : 'btn-reg');
+          let payload = {};
 
-          if(!user || !pass) { 
-              infoBox.style.color = "red"; 
-              infoBox.innerText = "请完整填写用户名和密码"; 
-              return; 
+          if (action === 'login') {
+                const identifier = document.getElementById('login-identifier').value.trim();
+                const pass = document.getElementById('login-pass').value.trim();
+                const code = document.getElementById('login-code').value.trim();
+                
+                if (!identifier) {
+                    infoBox.style.color = "red";
+                    infoBox.innerText = "请输入用户名或电子邮箱";
+                    return;
+                }
+
+                // 根据当前的 loginType 进行对应的拦截
+                if (loginType === 'password' && !pass) {
+                    infoBox.style.color = "red";
+                    infoBox.innerText = "请输入密码";
+                    return;
+                }
+                if (loginType === 'code' && !code) {
+                    infoBox.style.color = "red";
+                    infoBox.innerText = "请输入邮箱验证码";
+                    return;
+                }
+                
+                // 按需组装 payload，避免密码和验证码被同时误传
+                payload = { 
+                    identifier, 
+                    pass: loginType === 'password' ? pass : undefined, 
+                    code: loginType === 'code' ? code : undefined 
+                };
           }
 
           // 注册时触发密码强度判定
-          if (action === 'register' && !isStrongPassword(pass)) {
-              showToast("您的密码复杂度不够，请重新设置");
-              return;
+          if (action === 'register') {
+                const email = document.getElementById('reg-email').value.trim();
+                const code = document.getElementById('reg-code').value.trim();
+                const remark = document.getElementById('reg-remark').value.trim();
+
+                if (!user || !pass || !email || !code || !remark) {
+                    infoBox.style.color = "red";
+                    infoBox.innerText = "请完整填写所有五项注册信息";
+                    return;
+                }
+
+                if (!isStrongPassword(pass)) {
+                    showToast("密码复杂度不够，需同时包含大小写字母、数字及特殊符号");
+                    return;
+                }
+
+                payload = { user, pass, email, code, remark };
           }
           
           btn.disabled = true;
           infoBox.style.color = "#666"; 
-          infoBox.innerText = action === 'login' ? "正在验证身份..." : "正在创建账号...";
+          infoBox.innerText = action === 'login' ? "正在验证身份..." : "正在提交注册申请...";
 
           try {
               // 使用相对路径请求当前模块下的 API
               const res = await fetch(\`/api/\${action}\`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ user, pass })
+                  body: JSON.stringify(payload)
               });
               const data = await res.json();
 
@@ -262,15 +440,16 @@ export async function renderAuthPage() {
                   infoBox.innerText = data.msg;
                   
                   if(action === 'register') {
-                      setTimeout(() => {
-                          switchTab('login');
-                          document.getElementById('login-user').value = user;
-                          btn.disabled = false;
-                      }, 1200);
-                  } else {
-                      // 登录成功后可根据需要自行调整成功后的跳转逻辑
-                      setTimeout(() => { alert("登录成功！"); }, 500);
-                  }
+                        setTimeout(() => { switchTab('login'); btn.disabled = false; }, 1500);
+                    } else {
+                        // 登录成功判断角色
+                        if(data.role === 'admin') {
+                            document.getElementById('tab-admin').style.display = 'block';
+                            showToast("管理员登录成功");
+                        } else {
+                            showToast("登录成功");
+                        }
+                    }
               } else {
                   infoBox.style.color = "red";
                   infoBox.innerText = data.msg || "请求失败";
@@ -282,6 +461,55 @@ export async function renderAuthPage() {
               btn.disabled = false;
           }
       }
+
+      // 加载待审核用户列表
+        async function loadPendingUsers() {
+            const container = document.getElementById('pending-list');
+            container.innerHTML = "正在拉取名单...";
+            try {
+                const res = await fetch('./api/admin/pending-list', { method: 'POST' });
+                const data = await res.json();
+                if(data.success && data.list.length > 0) {
+                    container.innerHTML = data.list.map(u => \`
+                        <div class="user-card">
+                            <strong>用户名：\${u.user}</strong>
+                            <p><strong>注册邮箱：</strong>\${u.email || '未填写'}</p>
+                            <p><strong>申请表单信息：</strong>\${u.remark || '无'}</p>
+                            <p><strong>申请时间：</strong>\${new Date(u.createdAt).toLocaleString()}</p>
+                            <div class="btn-group">
+                                <button class="approve-btn" onclick="reviewUser('\${u.user}', 'approve')">批准通过</button>
+                                <button class="reject-btn" onclick="reviewUser('\${u.user}', 'reject')">拒绝通过</button>
+                            </div>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = "<p style='color:#999; text-align:center;'>当前无待审核的注册申请</p>";
+                }
+            } catch(e) {
+                container.innerHTML = "加载失败";
+            }
+        }
+
+
+        // 执行审核操作：批准或拒绝
+        async function reviewUser(targetUser, action) {
+            try {
+                const res = await fetch(\`./api/admin/\${action}\`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetUser })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    showToast(action === 'approve' ? "已批准该用户注册" : "已拒绝该注册申请");
+                    loadPendingUsers();
+                } else {
+                    showToast(data.msg || "操作失败");
+                }
+            } catch(e) {
+                showToast("操作失败");
+            }
+        }
   </script>
   </body>
   </html>
@@ -309,74 +537,242 @@ function checkPasswordStrength(pass) {
     return hasUpper && hasLower && hasNumber && hasSpecial;
 }
 
-// 注册处理逻辑（写入 KV）
-async function handleRegister(request, env) {
+// 发送邮箱验证码处理逻辑
+async function handleSendCode(request, env) {
     try {
         const KV = env.USER_DB;
-        if (!KV) {
-            return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
+        if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
+
+        const { email, action } = await request.json();
+        if (!email || !/\\S+@\\S+\\.\\S+/.test(email)) {
+            return Response.json({ success: false, msg: "邮箱格式不正确" }, { status: 400 });
         }
 
-        const { user, pass } = await request.json();
-        if (!user || !pass) {
-            return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
+        if (action === 'login') {
+            const mappedUser = await KV.get(`email:${email}`);
+            if (!mappedUser) {
+                return Response.json({ success: false, msg: "该邮箱尚未注册或申请" }, { status: 404 });
+            }
         }
 
-        // 服务端二次校验密码强度，防止越过前端提交
+        // 生成 6 位随机数字验证码
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // 存入 Cloudflare KV，设置有效期为 300 秒（5 分钟）
+        await KV.put(`code:${email}`, code, { expirationTtl: 300 });
+
+        // 发送邮件实现逻辑（如果配置了 RESEND_API_KEY 服务环境变量）
+        if (env.RESEND_API_KEY) {
+            await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    from: 'System <onboarding@resend.dev>',
+                    to: [email],
+                    subject: '注册验证码',
+                    html: `<p>您的注册验证码为：<strong>${code}</strong>，有效期 5 分钟。</p>`
+                })
+            });
+        }
+
+        return Response.json({ success: true, msg: "验证码已发送" });
+    } catch (e) {
+        return Response.json({ success: false, msg: "发送验证码异常" }, { status: 500 });
+    }
+}
+
+// 提交注册申请
+async function handleRegister(request, env) {
+    try {
+        const KV = env.USER_DB; // 💡 适配你的 Cloudflare USER_DB 绑定
+        if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
+
+        const { user, pass, email, code, remark } = await request.json();
+
+        if (!user || !pass) return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
+        if (!email) return Response.json({ success: false, msg: "邮箱不能为空" }, { status: 400 });
+        if (!code) return Response.json({ success: false, msg: "验证码不能为空" }, { status: 400 });
+        if (!remark) return Response.json({ success: false, msg: "备注不能为空" }, { status: 400 });
+
+        // 二次校验密码强度
         if (!checkPasswordStrength(pass)) {
-            return Response.json({ success: false, msg: "您的密码复杂度不够，请重新设置" }, { status: 400 });
+            return Response.json({ success: false, msg: "密码强度不足，请重新设置" }, { status: 400 });
         }
 
+        // 校验邮箱验证码正确性
+        const savedCode = await KV.get(`code:${email}`);
+        if (!savedCode || savedCode !== code) {
+            return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 400 });
+        }
+
+        // 用户名查重 + 邮箱查重
         const userKey = `user:${user}`;
-        
-        // 查询数据库判断用户是否存在
         const existingUser = await KV.get(userKey);
-        if (existingUser) {
-            return Response.json({ success: false, msg: "该用户名已被注册" }, { status: 400 });
-        }
+        if (existingUser) return Response.json({ success: false, msg: "该用户名已被注册或申请中" }, { status: 400 });
 
-        // 哈希密码并持久化存入 KV
+        const existingEmail = await KV.get(`email:${email}`);
+        if (existingEmail) return Response.json({ success: false, msg: "该邮箱已被注册或申请中" }, { status: 400 });
+
         const hashedPass = await hashPassword(pass);
+        
+        // 默认为 pending 状态，写入表单备注
         await KV.put(userKey, JSON.stringify({
             password: hashedPass,
+            email: email, // 记录邮箱供后续反查
+            role: "member",
+            status: "pending", // pending: 待审核, approved: 已批准
+            remark: remark || "",
             createdAt: new Date().toISOString()
         }));
 
-        return Response.json({ success: true, msg: "注册成功！即将切换至登录" });
+        // 建立邮箱到用户名的映射，便于邮箱登录时反查
+        await KV.put(
+            `email:${email}`,
+            user
+        );
+
+        // 成功注册后销毁已使用的验证码
+        await KV.delete(`code:${email}`);
+
+        return Response.json({ success: true, msg: "注册申请已提交！请等待管理员审核后再登录" });
     } catch (e) {
         return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
     }
 }
 
-// 登录处理逻辑（读取 KV 并比对）
+// 用户登录验证
 async function handleLogin(request, env) {
     try {
         const KV = env.USER_DB;
-        if (!KV) {
-            return Response.json({ success: false, msg: "未绑定 USER_KV 数据库" }, { status: 500 });
+        if (!KV) return Response.json({ success: false, msg: "未绑定 USER_DB 数据库" }, { status: 500 });
+
+        const { identifier, pass, code } = await request.json();
+        let userKey = "";
+        let targetEmail = "";
+
+        // 判定登录标识是邮箱还是用户名
+        if (identifier.includes('@')) {
+            targetEmail = identifier;
+            const mappedUser = await KV.get(`email:${targetEmail}`);
+            if (!mappedUser) return Response.json({ success: false, msg: "该邮箱尚未注册" }, { status: 404 });
+            userKey = `user:${mappedUser}`;
+        } else {
+            userKey = `user:${identifier}`;
         }
 
-        const { user, pass } = await request.json();
-        if (!user || !pass) {
-            return Response.json({ success: false, msg: "用户名或密码不能为空" }, { status: 400 });
-        }
-
-        const userKey = `user:${user}`;
+        // 拉取用户原始数据
         const userDataRaw = await KV.get(userKey);
-
-        if (!userDataRaw) {
-            return Response.json({ success: false, msg: "用户名或密码错误" }, { status: 401 });
-        }
-
+        if (!userDataRaw) return Response.json({ success: false, msg: "用户不存在" }, { status: 404 });
+        
         const userData = JSON.parse(userDataRaw);
-        const hashedPass = await hashPassword(pass);
 
-        if (userData.password !== hashedPass) {
-            return Response.json({ success: false, msg: "用户名或密码错误" }, { status: 401 });
+        // 验证身份（优先校验验证码，若没传验证码则校验密码）
+        if (code) {
+            // 注意：如果是用纯用户名登录，但强行通过 API 传了验证码参数，需要用数据里的 email 去比对
+            if (!targetEmail) targetEmail = userData.email; 
+            const savedCode = await KV.get(`code:${targetEmail}`);
+            
+            if (!savedCode || savedCode !== code) {
+                return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 401 });
+            }
+            // 验证码通过后立即销毁
+            await KV.delete(`code:${targetEmail}`);
+        } else if (pass) {
+            const hashedPass = await hashPassword(pass);
+            if (userData.password !== hashedPass) {
+                return Response.json({ success: false, msg: "密码错误" }, { status: 401 });
+            }
+        } else {
+            return Response.json({ success: false, msg: "必须提供密码或验证码" }, { status: 400 });
         }
 
-        return Response.json({ success: true, msg: "验证通过，登录成功！" });
+        // 拦截未通过审核的用户登录
+        if (userData.status === "pending") {
+            return Response.json({ success: false, msg: "您的注册申请正在审核中，请等待管理员批准" }, { status: 403 });
+        }
+
+        if (userData.status === "rejected") {
+            return Response.json({ success: false, msg: "您的注册申请已被管理员驳回" }, { status: 403 });
+        }
+
+        return Response.json({ 
+            success: true, 
+            msg: "登录成功！", 
+            role: userData.role || "member" 
+        });
     } catch (e) {
         return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
+    }
+}
+
+// 管理员拉取待审核名单
+async function handleGetPendingUsers(request, env) {
+    try {
+        const KV = env.USER_DB;
+        const listRes = await KV.list({ prefix: "user:" });
+        const pendingList = [];
+
+        for (const key of listRes.keys) {
+            const raw = await KV.get(key.name);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.status === "pending") {
+                    pendingList.push({
+                        user: key.name.replace("user:", ""),
+                        email: data.email,
+                        remark: data.remark,
+                        createdAt: data.createdAt
+                    });
+                }
+            }
+        }
+        return Response.json({ success: true, list: pendingList });
+    } catch (e) {
+        return Response.json({ success: false, list: [] });
+    }
+}
+
+// 管理员通过审核
+async function handleApproveUser(request, env) {
+    try {
+        const KV = env.USER_DB;
+        const { targetUser } = await request.json();
+        const userKey = `user:${targetUser}`;
+        
+        const raw = await KV.get(userKey);
+        if (!raw) return Response.json({ success: false, msg: "未找到该用户数据" });
+
+        const userData = JSON.parse(raw);
+        userData.status = "approved"; // 更新状态为已通过
+        
+        await KV.put(userKey, JSON.stringify(userData));
+        return Response.json({ success: true, msg: "已批准该用户注册" });
+    } catch (e) {
+        return Response.json({ success: false, msg: "操作失败" });
+    }
+}
+
+// 管理员拒绝驳回申请
+async function handleRejectUser(request, env) {
+    try {
+        const KV = env.USER_DB;
+        const { targetUser } = await request.json();
+        const userKey = `user:${targetUser}`;
+        
+        const raw = await KV.get(userKey);
+        if (!raw) return Response.json({ success: false, msg: "未找到该用户数据" });
+
+        // 直接从数据库清除该用户的申请记录（或标记为 rejected）
+        await KV.delete(userKey);
+        if (userData.email) {
+            await KV.delete(`email:${userData.email}`); // 驳回时同步清理绑定的邮箱映射
+        }
+
+        return Response.json({ success: true, msg: "已驳回该申请记录" });
+    } catch (e) {
+        return Response.json({ success: false, msg: "操作失败" });
     }
 }
