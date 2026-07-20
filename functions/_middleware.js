@@ -4,14 +4,14 @@ export async function onRequest(context) {
     const pathname = url.pathname;
 
     const SECRET_PATH = env.SECRET_PATH;
-    if (SECRET_PATH && (pathname === `/${SECRET_PATH}` || pathname === `/${SECRET_PATH}/`)) {
+    if (request.method==="GET" && SECRET_PATH && (pathname === `/${SECRET_PATH}` || pathname === `/${SECRET_PATH}/`)) {
         return new Response(getGateHtml(), {
             headers: { "Content-Type": "text/html; charset=utf-8" }
         });
     }
 
     // 校验 gate_pass Cookie 与 Session
-    if (pathname.startsWith("/manage")) {
+    if (pathname === "/manage" || pathname.startsWith("/manage/")) {
         const cookieHeader = request.headers.get("Cookie") || "";
         const match = cookieHeader.match(/gate_pass=([^;]+)/);
 

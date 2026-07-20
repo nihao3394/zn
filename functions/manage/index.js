@@ -321,12 +321,12 @@ export async function renderAuthPage() {
 
         // 发送邮箱验证码逻辑
         let countdown = 0;
-        <span style="text-decoration: underline wavy; text-decoration-color: #2e7d32;">async function sendEmailCode(actionType = 'register') {
+        async function sendEmailCode(actionType = 'register') {
             const emailId = actionType === 'login' ? 'login-identifier' : 'reg-email';
             const btnId = actionType === 'login' ? 'btn-login-send-code' : 'btn-send-code';
 
             const email = document.getElementById(emailId).value.trim();
-            const btn = document.getElementById(btnId);</span>
+            const btn = document.getElementById(btnId);
 
             if (!email || !/\S+@\S+\.\S+/.test(email)) {
                 showToast("请输入正确的邮箱地址");
@@ -544,10 +544,16 @@ async function checkAdmin(request, env) {
     const match = cookie.match(/session=([^;]+)/);
     if (!match) return false;
     const sessionId = match[1];
-    const sessionData = await env.USER_DB.get(`session:${sessionId}`);
-    if (!sessionData) return false;
+
+    // Session 仅作凭证，动态查询最新 role 
+    const sessionDataStr = await env.USER_DB.get(`session:${sessionId}`);
+    if (!sessionDataStr) return false;
     try {
-        const user = JSON.parse(sessionData);
+        const sessionData = JSON.parse(sessionDataStr);
+        // 使用 session 中绑定的 user 再次查询数据库，防止缓存了旧权限
+        const userDataRaw = await env.USER_DB.get(`user:${sessionData.user}`);
+        if (!userDataRaw) return false;
+        const user = JSON.parse(userDataRaw);
         return user.role === "admin";
     } catch (e) {
         return false;
@@ -565,6 +571,21 @@ async function handleSendCode(request, env) {
             return Response.json({ success: false, msg: "邮箱格式不正确" }, { status: 400 });
         }
 
+        // 发送接口 IP 频率限制 (1分钟最多5次)
+        const ip = request.headers.get("cf-connecting-ip") || "unknown";
+        const ipLimitKey = `limit:send_ip:${ip}`;
+        const ipSendStats = await KV.get(ipLimitKey);
+
+        if (ipSendStats) {
+            const count = parseInt(ipSendStats);
+            if (count >= 5) {
+                return Response.json({ success: false, msg: "当前IP发送频率过高，请 1 分钟后再试" }, { status: 429 });
+            }
+            await KV.put(ipLimitKey, (count + 1).toString(), { expirationTtl: 60 });
+        } else {
+            await KV.put(ipLimitKey, "1", { expirationTtl: 60 }); // IP维度防刷
+        }
+
         // 验证码发送频率限制（防刷、防邮箱轰炸）
         const limitKey = `limit:code:${email}`;
         const limited = await KV.get(limitKey);
@@ -580,7 +601,10 @@ async function handleSendCode(request, env) {
         }
 
         // 生成 6 位随机数字验证码
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // 使用 Web Crypto API 生成密码学安全的随机数
+        const randArray = new Uint32Array(1);
+        crypto.getRandomValues(randArray);
+        const code = (randArray[0] % 900000 + 100000).toString();  // % 900000 确保在 0~899999 之间，加上 100000 即 100000~999999
 
         // 验证码用途隔离（区分 register 与 login，避免相互覆盖）
         const actionType = action || 'register';
@@ -621,6 +645,12 @@ async function handleRegister(request, env) {
         if (!email) return Response.json({ success: false, msg: "邮箱不能为空" }, { status: 400 });
         if (!code) return Response.json({ success: false, msg: "验证码不能为空" }, { status: 400 });
         if (!remark) return Response.json({ success: false, msg: "备注不能为空" }, { status: 400 });
+
+        // 禁止注册管理员级别的敏感保留用户名
+        const reservedNames = ['admin', 'administrator', 'root', 'system', 'sys', 'supervisor', 'admin123'];
+        if (reservedNames.includes(user.toLowerCase())) {
+            return Response.json({ success: false, msg: "该用户名包含系统保留字，不允许注册" }, { status: 400 });
+        }
 
         // 二次校验密码强度
         if (!checkPasswordStrength(pass)) {
@@ -677,6 +707,7 @@ async function handleLogin(request, env) {
         const { identifier, pass, code } = await request.json();
         let userKey = "";
         let targetEmail = "";
+        let actualUsername = identifier;
 
         // 判定登录标识是邮箱还是用户名
         if (identifier.includes('@')) {
@@ -684,9 +715,64 @@ async function handleLogin(request, env) {
             const mappedUser = await KV.get(`email:${targetEmail}`);
             if (!mappedUser) return Response.json({ success: false, msg: "该邮箱尚未注册" }, { status: 404 });
             userKey = `user:${mappedUser}`;
+            actualUsername = mappedUser; // 抽取真实的用户名用于风控记录
         } else {
             userKey = `user:${identifier}`;
         }
+
+        // 登录风控前置校验：查询 IP 和 Username 是否处于冻结期
+        const ip = request.headers.get("cf-connecting-ip") || "unknown";
+        const ipFailKey = `login_fail:ip:${ip}`;
+        const userFailKey = `login_fail:user:${actualUsername}`;
+
+        const checkLockout = async (key) => {
+            const data = await KV.get(key);
+            if (!data) return { locked: false, remainingMs: 0 };
+            const parsed = JSON.parse(data);
+            if (parsed.lockedUntil > Date.now()) {
+                return { locked: true, remainingMs: parsed.lockedUntil - Date.now() };
+            }
+            return { locked: false, remainingMs: 0 };
+        };
+
+        const ipLock = await checkLockout(ipFailKey);
+        const userLock = await checkLockout(userFailKey);
+
+        if (ipLock.locked || userLock.locked) {
+            // 取 IP 和 账号两者中更长的冻结时间来提示用户
+            const maxRemainMs = Math.max(ipLock.remainingMs || 0, userLock.remainingMs || 0);
+            const remainMins = Math.ceil(maxRemainMs / 60000);
+            return Response.json({ success: false, msg: `失败次数过多，出于安全保护，请 ${remainMins} 分钟后再试` }, { status: 429 });
+        }
+
+        const recordFail = async (key) => {
+            const dataStr = await KV.get(key);
+            let count = 1;
+            let lockedUntil = 0;
+            
+            if (dataStr) {
+                const parsed = JSON.parse(dataStr);
+                if (Date.now() > parsed.lockedUntil) {
+                    count = parsed.count + 1; 
+                } else {
+                    return; // 若处于锁定期则直接返回
+                }
+            }
+            
+            if (count >= 5) {
+                // 指数级运算：第5次错误封禁 1 分钟，第6次 2 分钟，第7次 4 分钟...
+                const banMinutes = Math.pow(2, count - 5);
+                lockedUntil = Date.now() + banMinutes * 60 * 1000;
+                
+                // TTL设定：封禁时间结束后，记录在数据库多保留 30 分钟作为缓冲期
+                // 如果30分钟内没有再次输错，之前的错误计数将自动清零失效
+                const ttl = (banMinutes * 60) + 1800; 
+                await KV.put(key, JSON.stringify({ count, lockedUntil }), { expirationTtl: ttl });
+            } else {
+                // 尚未达到 5 次连错，在 10 分钟内积累错误次数，超时未达标则自动清零
+                await KV.put(key, JSON.stringify({ count, lockedUntil: 0 }), { expirationTtl: 600 });
+            }
+        };
 
         // 拉取用户原始数据
         const userDataRaw = await KV.get(userKey);
@@ -699,14 +785,24 @@ async function handleLogin(request, env) {
             if (!targetEmail) targetEmail = userData.email; 
             const savedCode = await KV.get(`code:login:${targetEmail}`);
             
+            // 邮箱验证码错误次数限制
+            const codeFailKey = `verify_fail_count:${targetEmail}`;
             if (!savedCode || savedCode !== code) {
-                return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 401 });
+                let failCount = parseInt(await KV.get(codeFailKey) || "0") + 1;
+                if (failCount >= 5) {
+                    await KV.delete(`code:login:${targetEmail}`); // 废弃该验证码
+                    await KV.delete(codeFailKey);
+                    return Response.json({ success: false, msg: "验证码错误次数超限，当前验证码已失效，请重新发送" }, { status: 401 });
+                }
+                await KV.put(codeFailKey, failCount.toString(), { expirationTtl: 300 }); // 与验证码存活期一致
+                return Response.json({ success: false, msg: `验证码错误或已过期 (剩余尝试次数: ${5 - failCount})` }, { status: 401 });
             }
-            // 验证码通过后立即销毁
-            await KV.delete(`code:login:${targetEmail}`);
+            await KV.delete(codeFailKey); // 成功通过验证码后，清除错误计数器
+            await KV.delete(`code:login:${targetEmail}`); // 立即销毁验证码
         } else if (pass) {
             const hashedPass = await hashPassword(pass);
             if (userData.password !== hashedPass) {
+                await Promise.all([recordFail(ipFailKey), recordFail(userFailKey)]);
                 return Response.json({ success: false, msg: "密码错误" }, { status: 401 });
             }
         } else {
@@ -722,15 +818,19 @@ async function handleLogin(request, env) {
             return Response.json({ success: false, msg: "您的注册申请已被管理员驳回" }, { status: 403 });
         }
 
+        // 登录成功时，重置并清除密码错误冻结计数
+        await Promise.all([KV.delete(ipFailKey), KV.delete(userFailKey)]);
+
         // 登录成功：生成 Session 并通过 Set-Cookie 安全下发给浏览器
         const sessionId = crypto.randomUUID();
+
+        // Session 现在只负责记录“你是谁”，不再缓存静态权限
         await KV.put(
             `session:${sessionId}`,
             JSON.stringify({
-                user: targetEmail || identifier,
-                role: userData.role || "member"
+                user: actualUsername  // 仅保存实际的唯一用户名
             }),
-            { expirationTtl: 3600 } // Session 有效期 1 小时
+            { expirationTtl: 3600 } 
         );
 
         return new Response(JSON.stringify({ 
