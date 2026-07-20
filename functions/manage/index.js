@@ -335,7 +335,7 @@ export async function renderAuthPage() {
 
             btn.disabled = true;
             try {
-                const res = await fetch('./api/send-code', {
+                const res = await fetch('/api/send-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, action: actionType })
@@ -427,7 +427,6 @@ export async function renderAuthPage() {
           infoBox.innerText = action === 'login' ? "正在验证身份..." : "正在提交注册申请...";
 
           try {
-              // 使用相对路径请求当前模块下的 API
               const res = await fetch(\`/api/\${action}\`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -467,7 +466,7 @@ export async function renderAuthPage() {
             const container = document.getElementById('pending-list');
             container.innerHTML = "正在拉取名单...";
             try {
-                const res = await fetch('./api/admin/pending-list', { method: 'POST' });
+                const res = await fetch('/api/admin/pending-list', { method: 'POST' });
                 const data = await res.json();
                 if(data.success && data.list.length > 0) {
                     container.innerHTML = data.list.map(u => \`
@@ -494,7 +493,7 @@ export async function renderAuthPage() {
         // 执行审核操作：批准或拒绝
         async function reviewUser(targetUser, action) {
             try {
-                const res = await fetch(\`./api/admin/\${action}\`, {
+                const res = await fetch(\`/api/admin/\${action}\`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ targetUser })
