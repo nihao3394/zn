@@ -46,9 +46,12 @@ export async function handleRegister(request, env) {
         const existingUser = await KV.get(userKey);
         if (existingUser) return Response.json({ success: false, msg: "该用户名已被注册或申请中" }, { status: 400 });
 
-        // 用户名格式校验：仅允许字母、数字、下划线，长度 3-20
-        if(!/^[a-zA-Z0-9_]{3,20}$/.test(user)){
-            return Response.json({ success:false, msg:"用户名只能包含字母数字下划线"},{ status:400 });
+        // 用户名格式校验：支持中文、英文、数字、下划线，长度 3-20
+        if(!/^[\u4e00-\u9fa5a-zA-Z0-9_]{3,20}$/.test(user)){
+            return Response.json(
+                { success:false, msg:"用户名只能包含中文、字母、数字和下划线，长度3-20位" },
+                { status:400 }
+            );
         }
 
         // 检查邮箱是否已绑定
