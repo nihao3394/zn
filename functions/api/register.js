@@ -37,6 +37,14 @@ export async function handleRegister(request, env) {
 
         // 校验验证码
         const savedCode = await KV.get(`code:register:${email}`);
+        console.log(
+            "验证码调试:",
+            {
+                key:`code:register:${email}`,
+                inputCode:code,
+                savedCode:savedCode
+            }
+        );
         if (!savedCode || savedCode !== code) {
             return Response.json({ success: false, msg: "验证码错误或已过期" }, { status: 400 });
         }
