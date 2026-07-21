@@ -37,6 +37,11 @@ export async function handleRegister(request, env) {
         const existingUser = await KV.get(userKey);
         if (existingUser) return Response.json({ success: false, msg: "该用户名已被注册或申请中" }, { status: 400 });
 
+        // 用户名格式校验：仅允许字母、数字、下划线，长度 3-20
+        if(!/^[a-zA-Z0-9_]{3,20}$/.test(user)){
+            return Response.json({ success:false, msg:"用户名只能包含字母数字下划线"},{ status:400 });
+        }
+
         // 检查邮箱是否已绑定
         const existingEmail = await KV.get(`email:${email}`);
         if (existingEmail) return Response.json({ success: false, msg: "该邮箱已被注册或申请中" }, { status: 400 });
@@ -70,6 +75,7 @@ export async function handleRegister(request, env) {
 
         return Response.json({ success: true, msg: "注册申请已提交！请等待管理员审核后再登录" });
     } catch (e) {
-        return Response.json({ success: false, msg: "服务器错误" }, { status: 500 });
+        console.error("REGISTER ERROR:", e);
+        return Response.json({ success:false, msg:e.message },{ status:500 });
     }
 }
