@@ -66,7 +66,7 @@ export async function onRequestPost(context) {
 
         // 保存验证码至 KV（区分 action 用途，设置 5 分钟 TTL 过期）
         const actionType = action || 'register';
-        await KV.put(`code:${actionType}:${email}`, code, { expirationTtl: 300 });
+        await KV.put(`code:register:${actionType}:${email}`, code, { expirationTtl: 300 });
         await KV.put(limitKey, "1", { expirationTtl: 60 }); // 设置 60s 冷却标记
 
         if (env.RESEND_API_KEY) {
