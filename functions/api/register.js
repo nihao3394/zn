@@ -1,4 +1,13 @@
 // 后端注册接口逻辑处理
+// Cloudflare Pages Functions 标准入口
+export async function onRequestPost(context) {
+
+    const { request, env } = context;
+
+    return handleRegister(request, env);
+
+}
+
 export async function handleRegister(request, env) {
     try {
         const KV = env.USER_DB; 

@@ -1,4 +1,13 @@
 // 管理员拉取待审核名单
+// Cloudflare Pages Functions 标准入口
+export async function onRequestPost(context) {
+
+    const { request, env } = context;
+
+    return handleGetPendingUsers(request, env);
+
+}
+
 async function handleGetPendingUsers(request, env) {
     try {
         if (!(await checkAdmin(request, env))) {
