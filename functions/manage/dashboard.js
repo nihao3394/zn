@@ -688,7 +688,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                             <td>\${m.username}</td>
                             <td><span class="role-badge">\${m.role}</span></td>
                             <td class="role-admin-only">
-                                \${m.username === ROOT_USER ? : \`
+                                \${m.username === ROOT_USER ? '<span style="color:#999;font-size:12px;"></span>' : \`
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
