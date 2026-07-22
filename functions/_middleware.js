@@ -11,7 +11,7 @@ export async function onRequest(context) {
     }
 
     // 校验 gate_pass Cookie 与 Session
-    if (pathname === "/manage" || pathname.startsWith("/manage/")) {
+    if (pathname === "/manage" || pathname.startsWith("/manage/") || pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
         const cookieHeader = request.headers.get("Cookie") || "";
         const match = cookieHeader.match(/gate_pass=([^;]+)/);
 
