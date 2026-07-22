@@ -465,8 +465,8 @@ export async function renderAuthPage() {
                     } else {
                         // 登录成功判断角色
                         if(data.role === 'admin') {
-                            document.getElementById('tab-admin').style.display = 'block';
                             showToast("管理员登录成功，正在进入控制台...");
+                            setTimeout(() => { window.location.href = '/manage/dashboard'; }, 1000);
                         } else {
                             showToast("登录成功，正在进入控制台...");
                             setTimeout(() => { window.location.href = '/manage/dashboard'; }, 1000);
