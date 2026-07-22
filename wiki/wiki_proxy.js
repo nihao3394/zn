@@ -126,8 +126,8 @@ export default {
         let text = await response.text();
 
         // 全局替换官方域名，强制浏览器后续的所有加载请求全部走 Worker
-        text = text.replace(/https?:\/\/(?!www)([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
-        text = text.replace(/\/\/(?!www)([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
+        text = text.replace(/https?:\/\/([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
+        text = text.replace(/\/\/([a-z0-9-]+)\.wikipedia\.org/g, '/$1');
 
         text = text.replaceAll("//upload.wikimedia.org", "/upload");
         text = text.replaceAll("https://upload.wikimedia.org", "/upload");

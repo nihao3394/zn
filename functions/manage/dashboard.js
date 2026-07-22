@@ -309,7 +309,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         <!-- 1. 维基百科面板 -->
         <section id="panel-wiki" class="view-panel active" style="padding:0;">
             <div class="wiki-container">
-                <iframe id="wiki-frame" class="wiki-iframe" src="https://wiki.arvin-487.workers.dev"></iframe>
+                <iframe id="wiki-frame" class="wiki-iframe" src="https://wiki.findingstar.top"></iframe>
                 <div class="wiki-trigger-zone"></div>
                 <!-- 侧边抽屉 -->
                 <div id="wiki-drawer-panel" class="wiki-drawer">
