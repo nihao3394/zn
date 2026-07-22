@@ -34,7 +34,7 @@ export async function onRequest(context) {
         return new Response("404 Not Found", { status: 404 });
     }
 
-    return renderDashboardPage(userCtx);
+    return renderDashboardPage(userCtx, env.ROOT_USER || '');
 }
 
 /**
@@ -42,7 +42,7 @@ export async function onRequest(context) {
 @param {Object} userCtx - 包含当前登录用户信息的对象，例如 { username: 'Admin', role: 'admin' }
 @returns {Response} - 渲染好 HTML 且带有防缓存 Headers 的 Response 对象
 */
-export function renderDashboardPage(userCtx) {
+export function renderDashboardPage(userCtx, rootUser = '') {
     const html = `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -434,6 +434,7 @@ export function renderDashboardPage(userCtx) {
             username: '${userCtx.username}', 
             role: '${userCtx.role}' 
         };
+        const ROOT_USER = '${rootUser}';
 
         // ——— 侧边栏拖拽调整宽度 ———
         (function initSidebarResize() {
@@ -687,9 +688,11 @@ export function renderDashboardPage(userCtx) {
                             <td>\${m.username}</td>
                             <td><span class="role-badge">\${m.role}</span></td>
                             <td class="role-admin-only">
+                                \${m.username === ROOT_USER ? '<span style="color:#999;font-size:12px;">元用户（不可修改）</span>' : \`
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
+                                \`}
                             </td>
                         </tr>
                     \`).join('');

@@ -77,6 +77,11 @@ async function handleUpdateRole(request, env) {
             return Response.json({ success: false, msg: "参数缺失" }, { status: 400 });
         }
 
+        // 元用户保护：ROOT_USER 的身份不可被任何人修改
+        if (env.ROOT_USER && targetUser === env.ROOT_USER) {
+            return Response.json({ success: false, msg: "元用户身份不可修改" }, { status: 403 });
+        }
+
         const validRoles = ["admin", "keyword_reviewer", "member"];
         if (!validRoles.includes(role)) {
             return Response.json({ success: false, msg: "无效的角色类型" }, { status: 400 });
