@@ -1,18 +1,8 @@
-import { renderDashboardPage } from './dashboard.js';
-
 // 主路由入口：统一分发 GET（页面）与 POST（接口）请求
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     const pathname = url.pathname;
-
-    if (pathname === "/manage/dashboard" || pathname === "/manage/dashboard/") {
-        const userCtx = await checkSession(request, env);
-        if (!userCtx) {
-            return new Response("404 Not Found", { status: 404 });
-        }
-        return renderDashboardPage(userCtx);
-    }
 
     // POST API 请求
     if (request.method === "POST") {
@@ -589,29 +579,6 @@ async function checkAdmin(request, env) {
         return user.role === "admin";
     } catch (e) {
         return false;
-    }
-}
-
-// 通用身份校验与数据读取（供 /manage/dashboard 守卫和控制台渲染使用）
-async function checkSession(request, env) {
-    const cookie = request.headers.get("Cookie");
-    if (!cookie) return null;
-    const match = cookie.match(/session=([^;]+)/);
-    if (!match) return null;
-    const sessionId = match[1];
-
-    const sessionDataStr = await env.USER_DB.get(`session:${sessionId}`);
-    if (!sessionDataStr) return null;
-    try {
-        const sessionData = JSON.parse(sessionDataStr);
-        const userDataRaw = await env.USER_DB.get(`user:${sessionData.user}`);
-        if (!userDataRaw) return null;
-        const user = JSON.parse(userDataRaw);
-        // 审核状态二次确认：pending / rejected 用户视为无效
-        if (user.status === "pending" || user.status === "rejected") return null;
-        return { username: sessionData.user, role: user.role };
-    } catch (e) {
-        return null;
     }
 }
 

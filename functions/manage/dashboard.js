@@ -1,3 +1,42 @@
+export async function onRequest(context) {
+    const { request, env } = context;
+    
+    // session 校验
+    const cookieHeader = request.headers.get("Cookie") || "";
+    const sessionMatch = cookieHeader.match(/session=([^;]+)/);
+    if (!sessionMatch) {
+        return new Response("404 Not Found", { status: 404 });
+    }
+
+    const userKV = env.USER_DB;
+    if (!userKV) {
+        return new Response("404 Not Found", { status: 404 });
+    }
+
+    const userSessionRaw = await userKV.get(`session:${sessionMatch[1]}`);
+    if (!userSessionRaw) {
+        return new Response("404 Not Found", { status: 404 });
+    }
+
+    let userCtx;
+    try {
+        const sess = JSON.parse(userSessionRaw);
+        const userRaw = await userKV.get(`user:${sess.user}`);
+        if (!userRaw) {
+            return new Response("404 Not Found", { status: 404 });
+        }
+        const user = JSON.parse(userRaw);
+        if (user.status === "pending" || user.status === "rejected") {
+            return new Response("404 Not Found", { status: 404 });
+        }
+        userCtx = { username: sess.user, role: user.role };
+    } catch (e) {
+        return new Response("404 Not Found", { status: 404 });
+    }
+
+    return renderDashboardPage(userCtx);
+}
+
 /**
 动态渲染控制台页面模块
 @param {Object} userCtx - 包含当前登录用户信息的对象，例如 { username: 'Admin', role: 'admin' }

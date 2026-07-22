@@ -67,6 +67,38 @@ export async function onRequest(context) {
             }
         );
 
+        // /manage/dashboard 额外要求：必须有有效的登录 session
+        if (pathname === "/manage/dashboard" || pathname === "/manage/dashboard/") {
+            const sessionMatch = cookieHeader.match(/session=([^;]+)/);
+            if (!sessionMatch) {
+                return new Response("404 Not Found", { status: 404 });
+            }
+
+            const userKV = env.USER_DB;
+            if (!userKV) {
+                return new Response("404 Not Found", { status: 404 });
+            }
+
+            const userSessionRaw = await userKV.get(`session:${sessionMatch[1]}`);
+            if (!userSessionRaw) {
+                return new Response("404 Not Found", { status: 404 });
+            }
+
+            try {
+                const sess = JSON.parse(userSessionRaw);
+                const userRaw = await userKV.get(`user:${sess.user}`);
+                if (!userRaw) {
+                    return new Response("404 Not Found", { status: 404 });
+                }
+                const user = JSON.parse(userRaw);
+                if (user.status === "pending" || user.status === "rejected") {
+                    return new Response("404 Not Found", { status: 404 });
+                }
+            } catch (e) {
+                return new Response("404 Not Found", { status: 404 });
+            }
+        }
+
         // 校验通过，放行进入 /manage/ 面板
         return next();
     } 
