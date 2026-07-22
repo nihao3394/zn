@@ -482,11 +482,33 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         // 页面初始化：权限受控渲染
+        // ——— 自动刷新轮询 ———
+        let pollTimer = null;
+        const POLL_INTERVAL = 10000; // 10 秒
+        let currentTab = 'wiki';
+
+        function startPolling() {
+            stopPolling();
+            pollTimer = setInterval(() => {
+                switch (currentTab) {
+                    case 'user-audit':   loadUserAuditList(); break;
+                    case 'keyword-audit': loadKeywordAuditList(); break;
+                    case 'members':       loadMemberList(); break;
+                    // wiki 和 settings 不需要刷新
+                }
+            }, POLL_INTERVAL);
+        }
+
+        function stopPolling() {
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             applyRolePermissions();
             loadUserAuditList();
             loadKeywordAuditList();
             loadMemberList();
+            startPolling();
         });
 
         function applyRolePermissions() {
@@ -519,6 +541,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 'settings': '个人控制台设置'
             };
             document.getElementById('panel-title').innerText = titles[tabKey] || '控制台';
+            currentTab = tabKey;
         }
 
         /* ----- 功能一：注册审核与词条审核卡片弹窗逻辑 ----- */
@@ -526,7 +549,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const container = document.getElementById('user-audit-list');
             container.innerHTML = '<p style="color:#999;text-align:center;">正在加载...</p>';
             try {
-                const res = await fetch('/api/admin/pending-list', { method: 'POST' });
+                const res = await fetch('/api/admin/pending-list', { method: 'POST', cache: 'no-store' });
                 const data = await res.json();
                 document.getElementById('user-pending-count').innerText = data.list ? data.list.length : 0;
                 if (data.success && data.list && data.list.length > 0) {
@@ -621,7 +644,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const container = document.getElementById('keyword-audit-list');
             container.innerHTML = '<p style="color:#999;text-align:center;">正在加载...</p>';
             try {
-                const res = await fetch('/api/wiki/pending', { method: 'GET' });
+                const res = await fetch('/api/wiki/pending', { method: 'GET', cache: 'no-store' });
                 const data = await res.json();
                 document.getElementById('kw-pending-count').innerText = data.list ? data.list.length : 0;
                 if (data.success && data.list && data.list.length > 0) {
@@ -680,7 +703,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const tbody = document.getElementById('member-table-body');
             tbody.innerHTML = '<tr><td colspan="3" style="color:#999;text-align:center;">正在加载...</td></tr>';
             try {
-                const res = await fetch('/api/admin/users', { method: 'GET' });
+                const res = await fetch('/api/admin/users', { method: 'GET', cache: 'no-store' });
                 const data = await res.json();
                 if (data.success && data.list && data.list.length > 0) {
                     tbody.innerHTML = data.list.map(m => \`
