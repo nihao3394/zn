@@ -73,8 +73,7 @@ export function renderDashboardPage(userCtx) {
             width: var(--sidebar-width);
             min-width: 200px;    /* 限制最小宽度防止破坏布局 */
             max-width: 40vw;     /* 限制最大伸缩宽度 */
-            resize: horizontal;  /* 开启横向拖拽 */
-            overflow-x: hidden;  /* 配合 resize 必须的属性 */
+            position: relative;  /* 为拖拽手柄提供定位锚点 */
             background: #ffffff;
             border-right: 1px solid var(--border-color);
             display: flex;
@@ -257,6 +256,22 @@ export function renderDashboardPage(userCtx) {
             border-radius: 8px; font-size: 14px; z-index: 200;
             display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+
+        /* 侧边栏拖拽调节手柄 */
+        .sidebar-resize-handle {
+            position: absolute;
+            top: 0;
+            right: -4px;           /* 跨在边框上 */
+            width: 8px;
+            height: 100%;
+            cursor: col-resize;
+            z-index: 30;
+            transition: background 0.15s;
+        }
+        .sidebar-resize-handle:hover,
+        .sidebar-resize-handle.dragging {
+            background: rgba(46, 125, 50, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -282,6 +297,7 @@ export function renderDashboardPage(userCtx) {
             </div>
             <button class="btn btn-secondary" onclick="logout()" style="padding:4px 8px; font-size:12px;">退出</button>
         </div>
+        <div class="sidebar-resize-handle"></div>
     </aside>
 
     <!-- 主操作区 -->
@@ -418,6 +434,43 @@ export function renderDashboardPage(userCtx) {
             username: '${userCtx.username}', 
             role: '${userCtx.role}' 
         };
+
+        // ——— 侧边栏拖拽调整宽度 ———
+        (function initSidebarResize() {
+            const sidebar = document.querySelector('.sidebar');
+            const handle = document.querySelector('.sidebar-resize-handle');
+            let startX, startWidth;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startWidth = sidebar.offsetWidth;
+                handle.classList.add('dragging');
+                document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'col-resize';
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+
+            function onMove(e) {
+                const delta = e.clientX - startX;
+                const newWidth = Math.min(
+                    Math.max(startWidth + delta, 200),  // min-width
+                    window.innerWidth * 0.4              // max-width (40vw)
+                );
+                sidebar.style.width = newWidth + 'px';
+            }
+
+            function onUp() {
+                handle.classList.remove('dragging');
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+        })();
+
         let forgetOtpVerified = false;
 
         function showToast(msg) {
@@ -468,23 +521,30 @@ export function renderDashboardPage(userCtx) {
         }
 
         /* ----- 功能一：注册审核与词条审核卡片弹窗逻辑 ----- */
-        function loadUserAuditList() {
-            const list = [
-                { id: '1', user: 'ZhangSan', email: 'zhang@qq.com', remark: '申请加入农业课题组', date: '2026-07-21' },
-                { id: '2', user: 'LiSi', email: 'lisi@gmail.com', remark: '需要使用平台查询百科', date: '2026-07-21' }
-            ];
-            document.getElementById('user-pending-count').innerText = list.length;
+        async function loadUserAuditList() {
             const container = document.getElementById('user-audit-list');
-            container.innerHTML = list.map(item => \`
-                <div class="horizontal-card" onclick="openUserAuditModal('\${item.user}', '\${item.email}', '\${item.remark}')">
-                    <div class="card-meta">
-                        <span class="card-title">申请人：\${item.user}</span>
-                        <span class="card-sub">邮箱：\${item.email}</span>
-                        <span class="card-sub">申请理由：\${item.remark.substring(0, 15)}...</span>
-                    </div>
-                    <span class="card-sub">\${item.date}</span>
-                </div>
-            \`).join('');
+            container.innerHTML = '<p style="color:#999;text-align:center;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/admin/pending-list', { method: 'POST' });
+                const data = await res.json();
+                document.getElementById('user-pending-count').innerText = data.list ? data.list.length : 0;
+                if (data.success && data.list && data.list.length > 0) {
+                    container.innerHTML = data.list.map(u => \`
+                        <div class="horizontal-card" onclick="openUserAuditModal('\${u.user}', '\${u.email || ''}', '\${(u.remark || '').replace(/'/g, "\\'")}')">
+                            <div class="card-meta">
+                                <span class="card-title">申请人：\${u.user}</span>
+                                <span class="card-sub">邮箱：\${u.email || '未填写'}</span>
+                                <span class="card-sub">申请理由：\${(u.remark || '无').substring(0, 15)}...</span>
+                            </div>
+                            <span class="card-sub">\${new Date(u.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="color:#999;text-align:center;">当前无待审核的注册申请</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;text-align:center;">加载失败: ' + (e.message || e) + '</p>';
+            }
         }
 
         function openUserAuditModal(user, email, remark) {
@@ -499,20 +559,49 @@ export function renderDashboardPage(userCtx) {
             openModal('modal-audit');
         }
 
-        function auditUserAction(user, type) {
-            showToast(type === 'approve' ? \`已批准 \${user} 的注册申请\` : \`已驳回 \${user} 的注册申请\`);
-            closeModal('modal-audit');
+        async function auditUserAction(user, type) {
+            try {
+                const res = await fetch('/api/admin/' + type, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetUser: user })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(type === 'approve' ? '已批准 ' + user + ' 的注册申请' : '已驳回 ' + user + ' 的注册申请');
+                    closeModal('modal-audit');
+                    loadUserAuditList(); // 刷新列表
+                } else {
+                    showToast(data.msg || '操作失败');
+                }
+            } catch (e) {
+                showToast('操作失败: ' + (e.message || e));
+            }
         }
 
         /* ----- 功能二：维基百科抽屉提交与词条审核 ----- */
-        function submitKeyword() {
+        async function submitKeyword() {
             const kw = document.getElementById('kw-input').value.trim();
             const usage = document.getElementById('kw-usage').value.trim();
             if (!kw || !usage) return showToast("请填写完整词条和用途说明");
 
-            showToast("已提交词条申请，等待词条审核员审核");
-            clearKwForm();
-            closeDrawer();
+            try {
+                const res = await fetch('/api/wiki/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword: kw, usage: usage })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("已提交词条申请，等待词条审核员审核");
+                    clearKwForm();
+                    closeDrawer();
+                } else {
+                    showToast(data.msg || "提交失败");
+                }
+            } catch (e) {
+                showToast("提交失败: " + (e.message || e));
+            }
         }
 
         function clearKwForm() {
@@ -527,22 +616,30 @@ export function renderDashboardPage(userCtx) {
             setTimeout(() => { drawer.style.right = ''; }, 300);
         }
 
-        function loadKeywordAuditList() {
-            const list = [
-                { id: '101', applicant: 'LiSi', keyword: '精准农业', usage: '用于撰写智慧农业论文引言' }
-            ];
-            document.getElementById('kw-pending-count').innerText = list.length;
+        async function loadKeywordAuditList() {
             const container = document.getElementById('keyword-audit-list');
-            container.innerHTML = list.map(item => \`
-                <div class="horizontal-card" onclick="openKeywordAuditModal('\${item.id}', '\${item.applicant}', '\${item.keyword}', '\${item.usage}')">
-                    <div class="card-meta">
-                        <span class="card-title">关键词：\${item.keyword}</span>
-                        <span class="card-sub">提交人：\${item.applicant}</span>
-                        <span class="card-sub">用途：\${item.usage}</span>
-                    </div>
-                    <button class="btn btn-primary" style="padding:4px 10px;">审查</button>
-                </div>
-            \`).join('');
+            container.innerHTML = '<p style="color:#999;text-align:center;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/wiki/pending', { method: 'GET' });
+                const data = await res.json();
+                document.getElementById('kw-pending-count').innerText = data.list ? data.list.length : 0;
+                if (data.success && data.list && data.list.length > 0) {
+                    container.innerHTML = data.list.map(item => \`
+                        <div class="horizontal-card" onclick="openKeywordAuditModal('\${item.id}', '\${item.user}', '\${item.keyword}', '\${(item.usage || '').replace(/'/g, "\\'")}')">
+                            <div class="card-meta">
+                                <span class="card-title">关键词：\${item.keyword}</span>
+                                <span class="card-sub">提交人：\${item.user}</span>
+                                <span class="card-sub">用途：\${(item.usage || '').substring(0, 15)}</span>
+                            </div>
+                            <button class="btn btn-primary" style="padding:4px 10px;">审查</button>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="color:#999;text-align:center;">当前无待审核的词条</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;text-align:center;">加载失败: ' + (e.message || e) + '</p>';
+            }
         }
 
         function openKeywordAuditModal(id, applicant, keyword, usage) {
@@ -557,35 +654,71 @@ export function renderDashboardPage(userCtx) {
             openModal('modal-audit');
         }
 
-        function auditKwAction(id, type) {
-            showToast(type === 'approve' ? "词条已通过并归档至数据库" : "词条申请已驳回");
-            closeModal('modal-audit');
+        async function auditKwAction(id, type) {
+            try {
+                const res = await fetch('/api/wiki/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, action: type })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(type === 'approve' ? "词条已通过并归档至数据库" : "词条申请已驳回");
+                    closeModal('modal-audit');
+                    loadKeywordAuditList(); // 刷新列表
+                } else {
+                    showToast(data.msg || "操作失败");
+                }
+            } catch (e) {
+                showToast("操作失败: " + (e.message || e));
+            }
         }
 
         /* ----- 三级角色管理列表 (管理员操作) ----- */
-        function loadMemberList() {
-            const members = [
-                { username: 'AdminUser', role: 'admin' },
-                { username: 'Reviewer1', role: 'keyword_reviewer' },
-                { username: 'NormalUser', role: 'member' }
-            ];
+        async function loadMemberList() {
             const tbody = document.getElementById('member-table-body');
-            tbody.innerHTML = members.map(m => \`
-                <tr>
-                    <td>\${m.username}</td>
-                    <td><span class="role-badge">\${m.role}</span></td>
-                    <td class="role-admin-only">
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
-                    </td>
-                </tr>
-            \`).join('');
-            applyRolePermissions();
+            tbody.innerHTML = '<tr><td colspan="3" style="color:#999;text-align:center;">正在加载...</td></tr>';
+            try {
+                const res = await fetch('/api/admin/users', { method: 'GET' });
+                const data = await res.json();
+                if (data.success && data.list && data.list.length > 0) {
+                    tbody.innerHTML = data.list.map(m => \`
+                        <tr>
+                            <td>\${m.username}</td>
+                            <td><span class="role-badge">\${m.role}</span></td>
+                            <td class="role-admin-only">
+                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
+                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
+                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
+                            </td>
+                        </tr>
+                    \`).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" style="color:#999;text-align:center;">暂无成员数据</td></tr>';
+                }
+                applyRolePermissions();
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="3" style="color:red;text-align:center;">加载失败: ' + (e.message || e) + '</td></tr>';
+            }
         }
 
-        function changeUserRole(targetUser, newRole) {
-            showToast(\`已将 \${targetUser} 的身份更新为: \${newRole}\`);
+        async function changeUserRole(targetUser, newRole) {
+            try {
+                const res = await fetch('/api/admin/users', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetUser: targetUser, role: newRole })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('已将 ' + targetUser + ' 的身份更新为: ' + newRole);
+                    loadMemberList(); // 刷新列表
+                } else {
+                    showToast(data.msg || "操作失败");
+                }
+            } catch (e) {
+                showToast("操作失败: " + (e.message || e));
+            }
         }
 
         /* ----- 设置页面 & 密码修改工作流 ----- */
