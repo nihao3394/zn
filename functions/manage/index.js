@@ -1,3 +1,33 @@
+import { renderDashboardPage } from './dashboard.js';
+
+export default {
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+
+        if (url.pathname === '/dashboard') {
+            // 在这里做身份校验（例如通过 Cookie 解析 JWT 或 Session ID）
+            const sessionData = await checkUserSession(request, env); 
+            
+            // 如果未登录，重定向到登录页
+            if (!sessionData) {
+                return Response.redirect(url.origin + '/login', 302);
+            }
+
+            // 如果校验通过，提取用户信息传递给渲染函数
+            const userCtx = {
+                username: sessionData.username,
+                role: sessionData.role 
+            };
+            
+            // 返回拼接好的 HTML Response
+            return renderDashboardPage(userCtx);
+        }
+
+        // 处理其他路由
+        return new Response('Not Found', { status: 404 });
+    }
+};
+
 // 主路由入口：统一分发 GET（页面）与 POST（接口）请求
 export async function onRequest(context) {
     const { request, env } = context;

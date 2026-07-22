@@ -1,3 +1,10 @@
+/**
+ * 动态渲染控制台页面模块
+ * @param {Object} userCtx - 包含当前登录用户信息的对象，例如 { username: 'Admin', role: 'admin' }
+ * @returns {Response} - 渲染好 HTML 且带有防缓存 Headers 的 Response 对象
+ */
+export function renderDashboardPage(userCtx) {
+    const html = `
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -367,7 +374,7 @@
 
     <script>
         // 全局状态管理
-        // 通过后端渲染动态注入真实身份信息
+        // 核心注入点：直接利用模板字符串的 \${} 语法，将传入的 userCtx 变量注入到 JS 中
         let currentUser = { 
             username: '${userCtx.username}', 
             role: '${userCtx.role}' 
@@ -409,7 +416,7 @@
             document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
 
             event.currentTarget.classList.add('active');
-            document.getElementById(`panel-${tabKey}`).classList.add('active');
+            document.getElementById(\`panel-\${tabKey}\`).classList.add('active');
             
             const titles = {
                 'wiki': '维基百科镜像代理',
@@ -429,32 +436,32 @@
             ];
             document.getElementById('user-pending-count').innerText = list.length;
             const container = document.getElementById('user-audit-list');
-            container.innerHTML = list.map(item => `
-                <div class="horizontal-card" onclick="openUserAuditModal('${item.user}', '${item.email}', '${item.remark}')">
+            container.innerHTML = list.map(item => \`
+                <div class="horizontal-card" onclick="openUserAuditModal('\${item.user}', '\${item.email}', '\${item.remark}')">
                     <div class="card-meta">
-                        <span class="card-title">申请人：${item.user}</span>
-                        <span class="card-sub">邮箱：${item.email}</span>
-                        <span class="card-sub">申请理由：${item.remark.substring(0, 15)}...</span>
+                        <span class="card-title">申请人：\${item.user}</span>
+                        <span class="card-sub">邮箱：\${item.email}</span>
+                        <span class="card-sub">申请理由：\${item.remark.substring(0, 15)}...</span>
                     </div>
-                    <span class="card-sub">${item.date}</span>
+                    <span class="card-sub">\${item.date}</span>
                 </div>
-            `).join('');
+            \`).join('');
         }
 
         function openUserAuditModal(user, email, remark) {
-            document.getElementById('modal-title').innerText = `审核注册申请 - ${user}`;
-            document.getElementById('modal-content').innerHTML = `
-                <p><strong>用户名：</strong>${user}</p>
-                <p><strong>邮箱：</strong>${email}</p>
-                <p><strong>申请说明：</strong>${remark}</p>
-            `;
+            document.getElementById('modal-title').innerText = \`审核注册申请 - \${user}\`;
+            document.getElementById('modal-content').innerHTML = \`
+                <p><strong>用户名：</strong>\${user}</p>
+                <p><strong>邮箱：</strong>\${email}</p>
+                <p><strong>申请说明：</strong>\${remark}</p>
+            \`;
             document.getElementById('modal-btn-approve').onclick = () => { auditUserAction(user, 'approve'); };
             document.getElementById('modal-btn-reject').onclick = () => { auditUserAction(user, 'reject'); };
             openModal('modal-audit');
         }
 
         function auditUserAction(user, type) {
-            showToast(type === 'approve' ? `已批准 ${user} 的注册申请` : `已驳回 ${user} 的注册申请`);
+            showToast(type === 'approve' ? \`已批准 \${user} 的注册申请\` : \`已驳回 \${user} 的注册申请\`);
             closeModal('modal-audit');
         }
 
@@ -476,11 +483,8 @@
 
         function closeDrawer() {
             const drawer = document.getElementById('wiki-drawer-panel');
-            // 强行用内联样式覆盖收回
             drawer.style.right = '-360px'; 
-            // 如果输入框还在焦点状态，取消它的焦点以清除 :focus-within 状态
             if (document.activeElement) document.activeElement.blur();
-            // 300ms动画结束后，清除内联样式，把控制权还给 CSS 的 hover
             setTimeout(() => { drawer.style.right = ''; }, 300);
         }
 
@@ -490,25 +494,25 @@
             ];
             document.getElementById('kw-pending-count').innerText = list.length;
             const container = document.getElementById('keyword-audit-list');
-            container.innerHTML = list.map(item => `
-                <div class="horizontal-card" onclick="openKeywordAuditModal('${item.id}', '${item.applicant}', '${item.keyword}', '${item.usage}')">
+            container.innerHTML = list.map(item => \`
+                <div class="horizontal-card" onclick="openKeywordAuditModal('\${item.id}', '\${item.applicant}', '\${item.keyword}', '\${item.usage}')">
                     <div class="card-meta">
-                        <span class="card-title">关键词：${item.keyword}</span>
-                        <span class="card-sub">提交人：${item.applicant}</span>
-                        <span class="card-sub">用途：${item.usage}</span>
+                        <span class="card-title">关键词：\${item.keyword}</span>
+                        <span class="card-sub">提交人：\${item.applicant}</span>
+                        <span class="card-sub">用途：\${item.usage}</span>
                     </div>
                     <button class="btn btn-primary" style="padding:4px 10px;">审查</button>
                 </div>
-            `).join('');
+            \`).join('');
         }
 
         function openKeywordAuditModal(id, applicant, keyword, usage) {
-            document.getElementById('modal-title').innerText = `词条审核 - ${keyword}`;
-            document.getElementById('modal-content').innerHTML = `
-                <p><strong>提交成员：</strong>${applicant}</p>
-                <p><strong>词条名称：</strong>${keyword}</p>
-                <p><strong>申请用途：</strong>${usage}</p>
-            `;
+            document.getElementById('modal-title').innerText = \`词条审核 - \${keyword}\`;
+            document.getElementById('modal-content').innerHTML = \`
+                <p><strong>提交成员：</strong>\${applicant}</p>
+                <p><strong>词条名称：</strong>\${keyword}</p>
+                <p><strong>申请用途：</strong>\${usage}</p>
+            \`;
             document.getElementById('modal-btn-approve').onclick = () => { auditKwAction(id, 'approve'); };
             document.getElementById('modal-btn-reject').onclick = () => { auditKwAction(id, 'reject'); };
             openModal('modal-audit');
@@ -527,22 +531,22 @@
                 { username: 'NormalUser', role: 'member' }
             ];
             const tbody = document.getElementById('member-table-body');
-            tbody.innerHTML = members.map(m => `
+            tbody.innerHTML = members.map(m => \`
                 <tr>
-                    <td>${m.username}</td>
-                    <td><span class="role-badge">${m.role}</span></td>
+                    <td>\${m.username}</td>
+                    <td><span class="role-badge">\${m.role}</span></td>
                     <td class="role-admin-only">
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('${m.username}', 'keyword_reviewer')">设为词条审核员</button>
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('${m.username}', 'admin')">设为管理员</button>
-                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('${m.username}', 'member')">设为普通成员</button>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
                     </td>
                 </tr>
-            `).join('');
+            \`).join('');
             applyRolePermissions();
         }
 
         function changeUserRole(targetUser, newRole) {
-            showToast(`已将 ${targetUser} 的身份更新为: ${newRole}`);
+            showToast(\`已将 \${targetUser} 的身份更新为: \${newRole}\`);
         }
 
         /* ----- 设置页面 & 密码修改工作流 ----- */
@@ -593,3 +597,13 @@
     </script>
 </body>
 </html>
+    `;
+
+    // 返回组装好的 HTML，并设置正确的 Content-Type[cite: 9]
+    return new Response(html, {
+        headers: {
+            "Content-Type": "text/html;charset=UTF-8",
+            "Cache-Control": "no-store" // 防止浏览器缓存敏感的控制台页面
+        }
+    });
+}
