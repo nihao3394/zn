@@ -168,7 +168,7 @@ export async function onRequestPost(context) {
                 }
                 
                 // TTL 设定为 300 秒（5分钟）
-                await KV.put(codeFailKey, failCount.toString(), { expirationTtl: 300 }); 
+                await KV.put(codeFailKey, failCount.toString(), { expirationTtl: 1800 }); 
                 return Response.json({ success: false, msg: `验证码错误或已过期 (剩余尝试次数: ${5 - failCount})` }, { status: 401 });
             }
 

@@ -364,7 +364,7 @@ export async function renderAuthPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast("验证码已发送至邮箱，请查收，有效期 5 分钟");
+                    showToast("验证码已发送至邮箱，请查收，有效期 30 分钟");
                     countdown = 60;
                     const timer = setInterval(() => {
                         countdown--;
@@ -641,10 +641,10 @@ async function handleSendCode(request, env) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    from: 'System <onboarding@resend.dev>',
+                    from: '知农系统 <no-reply@findingstar.top>',
                     to: [email],
-                    subject: '验证码',
-                    html: `<p>您的验证码为：<strong>${code}</strong>，有效期 5 分钟。</p>`
+                    subject: '【知农】您的验证码：' + code,
+                    html: `<p>您的验证码为：<strong>${code}</strong>，有效期 30 分钟。</p>`
                 })
             });
         }
@@ -816,7 +816,7 @@ async function handleLogin(request, env) {
                     await KV.delete(codeFailKey);
                     return Response.json({ success: false, msg: "验证码错误次数超限，当前验证码已失效，请重新发送" }, { status: 401 });
                 }
-                await KV.put(codeFailKey, failCount.toString(), { expirationTtl: 300 }); // 与验证码存活期一致
+                await KV.put(codeFailKey, failCount.toString(), { expirationTtl: 1800 }); // 与验证码存活期一致
                 return Response.json({ success: false, msg: `验证码错误或已过期 (剩余尝试次数: ${5 - failCount})` }, { status: 401 });
             }
             await KV.delete(codeFailKey); // 成功通过验证码后，清除错误计数器

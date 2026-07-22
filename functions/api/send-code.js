@@ -77,10 +77,47 @@ export async function onRequestPost(context) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    from: 'System <no-reply@findingstar.top>',
+                    from: '知农系统 <no-reply@findingstar.top>',
                     to: [email],
-                    subject: '您的验证码',
-                    html: `<p>您的验证码为：<strong style="font-size: 18px; color: #2e7d32;">${code}</strong>，有效期 5 分钟。如非本人操作请忽略。</p>`
+                    subject: '【知农】您的验证码：' + code,
+                    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:40px 0;">
+  <tr>
+    <td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+        <!-- 顶部色条 -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#2e7d32,#43a047);padding:28px 32px;text-align:center;">
+            <h1 style="color:#fff;font-size:22px;margin:0;font-weight:600;">🌱 知农 · 验证码</h1>
+          </td>
+        </tr>
+        <!-- 正文 -->
+        <tr>
+          <td style="padding:32px;text-align:center;">
+            <p style="color:#555;font-size:14px;margin:0 0 8px;">您正在进行身份验证，请在 30 分钟内输入以下验证码：</p>
+            <div style="background:#f1f8f1;border:2px dashed #a5d6a7;border-radius:10px;padding:18px 24px;margin:20px 0;display:inline-block;">
+              <span style="font-size:36px;font-weight:700;color:#2e7d32;letter-spacing:6px;font-family:'Courier New',monospace;">${code}</span>
+            </div>
+            <p style="color:#999;font-size:12px;margin:0;">如非本人操作，请忽略此邮件。</p>
+          </td>
+        </tr>
+        <!-- 底部 -->
+        <tr>
+          <td style="background:#fafafa;padding:16px 32px;text-align:center;border-top:1px solid #eee;">
+            <p style="color:#bbb;font-size:11px;margin:0;">此邮件由系统自动发送，请勿回复。</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`,
+                    text: `您的验证码为：${code}，有效期 30 分钟。如非本人操作请忽略。`
                 })
             });
 
