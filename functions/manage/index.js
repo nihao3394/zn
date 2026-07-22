@@ -1,21 +1,8 @@
-import { renderDashboardPage } from './dashboard.js';
-
 // 主路由入口：统一分发 GET（页面）与 POST（接口）请求
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     const pathname = url.pathname;
-
-    // 严格保护 /manage/dashboard 路径
-    if (pathname === "/manage/dashboard" || pathname === "/manage/dashboard/") {
-        const userCtx = await checkSession(request, env);
-        if (!userCtx) {
-            // 未登录强制 302 重定向回 /manage 登录页
-            return Response.redirect(url.origin + "/manage", 302);
-        }
-        // 登录成功，渲染控制台页面并注入用户上下文
-        return renderDashboardPage(userCtx);
-    }
 
     // POST API 请求
     if (request.method === "POST") {
@@ -27,14 +14,9 @@ export async function onRequest(context) {
         if (pathname.endsWith("/api/admin/reject")) return handleRejectUser(request, env);
     }
 
-    // GET 请求处理：渲染登录/注册 UI 界面
+    // GET 请求处理：始终渲染登录/注册 UI 界面（不自动跳转）
     if (request.method === "GET") {
-        const userCtx = await checkSession(request, env);
-        if (userCtx) {
-            // 如果已经登录，访问 /manage 时直接带去控制台
-            return Response.redirect(url.origin + "/manage/dashboard", 302);
-        }
-        // 默认返回登录页
+        // 登录成功后的跳转由前端 JS 控制：口令页 → /manage → 登录成功 → /manage/dashboard
         return renderAuthPage();
     }
 
@@ -597,27 +579,6 @@ async function checkAdmin(request, env) {
         return user.role === "admin";
     } catch (e) {
         return false;
-    }
-}
-
-// 通用身份校验与数据读取
-async function checkSession(request, env) {
-    const cookie = request.headers.get("Cookie");
-    if (!cookie) return null;
-    const match = cookie.match(/session=([^;]+)/);
-    if (!match) return null;
-    const sessionId = match[1];
-
-    const sessionDataStr = await env.USER_DB.get(`session:${sessionId}`);
-    if (!sessionDataStr) return null;
-    try {
-        const sessionData = JSON.parse(sessionDataStr);
-        const userDataRaw = await env.USER_DB.get(`user:${sessionData.user}`);
-        if (!userDataRaw) return null;
-        const user = JSON.parse(userDataRaw);
-        return { username: sessionData.user, role: user.role };
-    } catch (e) {
-        return null;
     }
 }
 
