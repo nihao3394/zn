@@ -191,6 +191,9 @@ export async function renderAuthPage() {
                 opacity: 1;
                 transform: translateX(-50%) translateY(0);
             }
+            .toast.success {
+                background: rgba(46, 125, 50, 0.9);
+            }
       </style>
   </head>
   <body>
@@ -270,15 +273,16 @@ export async function renderAuthPage() {
 
         // Toast 淡出弹窗控制逻辑
         let toastTimer = null;
-        function showToast(message) {
+        function showToast(message, type) {
             const toast = document.getElementById('toast');
             toast.innerText = message;
-            toast.classList.add('show');
+            toast.className = 'toast show';
+            if (type === 'success') toast.classList.add('success');
 
             if (toastTimer) clearTimeout(toastTimer);
             toastTimer = setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500); // 2.5 秒后自动淡出隐藏
+                toast.className = 'toast';
+            }, 2500);
         }
 
         // 密码强度检测函数：必须同时包含大写字母、小写字母、数字和特殊字符
@@ -364,7 +368,7 @@ export async function renderAuthPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast("验证码已发送至邮箱，请查收，有效期 30 分钟");
+                    showToast("验证码已发送至邮箱，请查收，有效期 30 分钟", 'success');
                     countdown = 60;
                     const timer = setInterval(() => {
                         countdown--;
@@ -465,10 +469,10 @@ export async function renderAuthPage() {
                     } else {
                         // 登录成功判断角色
                         if(data.role === 'admin') {
-                            showToast("管理员登录成功，正在进入控制台...");
+                            showToast("管理员登录成功，正在进入控制台...", 'success');
                             setTimeout(() => { window.location.href = '/manage/dashboard'; }, 1000);
                         } else {
-                            showToast("登录成功，正在进入控制台...");
+                            showToast("登录成功，正在进入控制台...", 'success');
                             setTimeout(() => { window.location.href = '/manage/dashboard'; }, 1000);
                         }
                     }

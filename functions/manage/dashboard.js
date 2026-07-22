@@ -736,7 +736,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         function triggerForgetOldPassword() {
-            showToast("验证码已发送至邮箱，请注意查收");
+            showToast("验证码已发送至邮箱，请注意查收", 'success');
             openModal('modal-otp');
         }
 
@@ -755,7 +755,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const pConfirm = document.getElementById('pwd-confirm').value;
             if (pNew !== pConfirm) return showToast("两次输入的密码不一致");
             
-            showToast("密码修改成功！");
+            showToast("密码修改成功！", 'success');
             togglePasswordForm();
         }
 
