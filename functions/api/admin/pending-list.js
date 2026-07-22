@@ -9,6 +9,28 @@ export async function onRequestPost(context) {
 
 }
 
+// ——— 管理员鉴权 ———
+async function checkAdmin(request, env) {
+    const cookie = request.headers.get("Cookie") || "";
+    const match = cookie.match(/session=([^;]+)/);
+    if (!match) return false;
+
+    const KV = env.USER_DB;
+    if (!KV) return false;
+
+    const sessRaw = await KV.get(`session:${match[1]}`);
+    if (!sessRaw) return false;
+    try {
+        const sess = JSON.parse(sessRaw);
+        const userRaw = await KV.get(`user:${sess.user}`);
+        if (!userRaw) return false;
+        const user = JSON.parse(userRaw);
+        return user.role === "admin";
+    } catch (e) {
+        return false;
+    }
+}
+
 async function handleGetPendingUsers(request, env) {
     try {
         if (!(await checkAdmin(request, env))) {
