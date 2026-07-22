@@ -1,38 +1,21 @@
 import { renderDashboardPage } from './dashboard.js';
 
-export default {
-    async fetch(request, env, ctx) {
-        const url = new URL(request.url);
-
-        if (url.pathname === '/dashboard') {
-            // 在这里做身份校验（例如通过 Cookie 解析 JWT 或 Session ID）
-            const sessionData = await checkUserSession(request, env); 
-            
-            // 如果未登录，重定向到登录页
-            if (!sessionData) {
-                return Response.redirect(url.origin + '/login', 302);
-            }
-
-            // 如果校验通过，提取用户信息传递给渲染函数
-            const userCtx = {
-                username: sessionData.username,
-                role: sessionData.role 
-            };
-            
-            // 返回拼接好的 HTML Response
-            return renderDashboardPage(userCtx);
-        }
-
-        // 处理其他路由
-        return new Response('Not Found', { status: 404 });
-    }
-};
-
 // 主路由入口：统一分发 GET（页面）与 POST（接口）请求
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    // 严格保护 /manage/dashboard 路径
+    if (pathname === "/manage/dashboard" || pathname === "/manage/dashboard/") {
+        const userCtx = await checkSession(request, env);
+        if (!userCtx) {
+            // 未登录强制 302 重定向回 /manage 登录页
+            return Response.redirect(url.origin + "/manage", 302);
+        }
+        // 登录成功，渲染控制台页面并注入用户上下文
+        return renderDashboardPage(userCtx);
+    }
 
     // POST API 请求
     if (request.method === "POST") {
@@ -46,12 +29,10 @@ export async function onRequest(context) {
 
     // GET 请求处理：渲染登录/注册 UI 界面
     if (request.method === "GET") {
-        if (pathname === "/dashboard") {
-            // 校验是否登录，未登录直接踢回首页
-            const userCtx = await checkSession(request, env);
-            if (!userCtx) return Response.redirect(url.origin + "/", 302);
-            // 渲染控制台，并将用户上下文注入进去
-            return renderDashboardPage(userCtx);
+        const userCtx = await checkSession(request, env);
+        if (userCtx) {
+            // 如果已经登录，访问 /manage 时直接带去控制台
+            return Response.redirect(url.origin + "/manage/dashboard", 302);
         }
         // 默认返回登录页
         return renderAuthPage();
@@ -506,7 +487,7 @@ export async function renderAuthPage() {
                             showToast("管理员登录成功，正在进入控制台...");
                         } else {
                             showToast("登录成功，正在进入控制台...");
-                            setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+                            setTimeout(() => { window.location.href = '/manage/dashboard'; }, 1000);
                         }
                     }
               } else {

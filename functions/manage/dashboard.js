@@ -593,7 +593,10 @@ export function renderDashboardPage(userCtx) {
         /* 通用 Modal 辅助函数 */
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        function logout() { window.location.href = '/manage'; }
+        function logout() { 
+            document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = '/manage'; 
+        }
     </script>
 </body>
 </html>
