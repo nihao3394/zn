@@ -540,7 +540,7 @@ export async function renderAuthPage() {
   </body>
   </html>
   `;
-  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
 // ---------------- 后端 API 与 KV 数据交互 ----------------
