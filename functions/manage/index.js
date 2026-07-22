@@ -16,6 +16,14 @@ export async function onRequest(context) {
 
     // GET 请求处理：渲染登录/注册 UI 界面
     if (request.method === "GET") {
+        if (pathname === "/dashboard") {
+            // 校验是否登录，未登录直接踢回首页
+            const userCtx = await checkSession(request, env);
+            if (!userCtx) return Response.redirect(url.origin + "/", 302);
+            // 渲染控制台，并将用户上下文注入进去
+            return renderDashboardPage(userCtx);
+        }
+        // 默认返回登录页
         return renderAuthPage();
     }
 
@@ -201,7 +209,6 @@ export async function renderAuthPage() {
       <div class="tabs">
           <div class="tab active" id="tab-login" onclick="switchTab('login')">用户登录</div>
           <div class="tab" id="tab-reg" onclick="switchTab('reg')">新用户注册</div>
-          <div class="tab" id="tab-admin" style="display:none;" onclick="switchTab('admin')">审核面板</div>
       </div>
 
       <!-- 登录表单 -->
@@ -260,12 +267,6 @@ export async function renderAuthPage() {
                 <textarea id="reg-remark" rows="2" placeholder="请填写申请加入的理由"></textarea>
           </div>
           <button class="submit-btn" id="btn-reg" onclick="handleAuth('register')">提交注册</button>
-      </div>
-
-      <!-- 管理员审核面板 -->
-        <div id="form-admin" class="toggle-form">
-            <h4 style="margin-bottom:12px; color:#2e7d32;">待审核注册名单</h4>
-            <div id="pending-list">正在加载待审核列表...</div>
       </div>
 
       <div id="info-box"></div>
@@ -472,9 +473,10 @@ export async function renderAuthPage() {
                         // 登录成功判断角色
                         if(data.role === 'admin') {
                             document.getElementById('tab-admin').style.display = 'block';
-                            showToast("管理员登录成功");
+                            showToast("管理员登录成功，正在进入控制台...");
                         } else {
-                            showToast("登录成功");
+                            showToast("登录成功，正在进入控制台...");
+                            setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
                         }
                     }
               } else {
@@ -584,6 +586,27 @@ async function checkAdmin(request, env) {
         return user.role === "admin";
     } catch (e) {
         return false;
+    }
+}
+
+// 通用身份校验与数据读取
+async function checkSession(request, env) {
+    const cookie = request.headers.get("Cookie");
+    if (!cookie) return null;
+    const match = cookie.match(/session=([^;]+)/);
+    if (!match) return null;
+    const sessionId = match[1];
+
+    const sessionDataStr = await env.USER_DB.get(`session:${sessionId}`);
+    if (!sessionDataStr) return null;
+    try {
+        const sessionData = JSON.parse(sessionDataStr);
+        const userDataRaw = await env.USER_DB.get(`user:${sessionData.user}`);
+        if (!userDataRaw) return null;
+        const user = JSON.parse(userDataRaw);
+        return { username: sessionData.user, role: user.role };
+    } catch (e) {
+        return null;
     }
 }
 

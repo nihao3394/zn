@@ -145,9 +145,10 @@
             flex-direction: column;
             gap: 16px;
         }
-        /* 严格限制仅悬停在 12px 触发区或抽屉本身时才弹出 */
+        /* 严格限制仅悬停在 12px 触发区、抽屉本身或内部有元素时才弹出 */
         .wiki-trigger-zone:hover + .wiki-drawer, 
-        .wiki-drawer:hover { right: 0; }
+        .wiki-drawer:hover,
+        .wiki-drawer:focus-within { right: 0; }
 
         /* 通用表单与按钮 */
         .form-group { margin-bottom: 16px; }
@@ -366,7 +367,11 @@
 
     <script>
         // 全局状态管理
-        let currentUser = { username: 'AdminUser', role: 'admin' }; // 'admin' | 'keyword_reviewer' | 'member'
+        // 通过后端渲染动态注入真实身份信息
+        let currentUser = { 
+            username: '${userCtx.username}', 
+            role: '${userCtx.role}' 
+        };
         let forgetOtpVerified = false;
 
         function showToast(msg) {
@@ -470,7 +475,13 @@
         }
 
         function closeDrawer() {
-            document.getElementById('wiki-drawer-panel').style.right = '-360px';
+            const drawer = document.getElementById('wiki-drawer-panel');
+            // 强行用内联样式覆盖收回
+            drawer.style.right = '-360px'; 
+            // 如果输入框还在焦点状态，取消它的焦点以清除 :focus-within 状态
+            if (document.activeElement) document.activeElement.blur();
+            // 300ms动画结束后，清除内联样式，把控制权还给 CSS 的 hover
+            setTimeout(() => { drawer.style.right = ''; }, 300);
         }
 
         function loadKeywordAuditList() {
