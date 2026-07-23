@@ -44,7 +44,22 @@
         .section-title { text-align: center; margin: 40px 0 10px; color: #2e7d32; font-size: 1.8rem; }
         .section-subtitle { text-align: center; margin-bottom: 30px; color: #666; font-size: 0.95rem; }
         .desktop-only { display: inline; }
-        .mobile-only  { display: none;  }
+
+        .hero-stats {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.95rem;
+            margin-top: 20px;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 6px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .hero-stats span { font-weight: bold; color: #fff59d; margin: 0 3px; }
+
+        .mobile-only  { display: none; }
         
         /* ==========================================
            横向滑动卡片与边缘淡出样式
@@ -102,9 +117,10 @@
             .nav-links a { padding: 5px 10px; font-size: 0.9rem; }
             .hero h1 { font-size: 2rem; padding: 0 10px; }
             .hero { height: 280px; }
-            .card-link { flex: 0 0 260px; } /* 移动端卡片稍微改窄一点 */
+            .card-link { flex: 0 0 260px; }
             .desktop-only { display: none;  }
             .mobile-only  { display: inline; }
+            .hero-stats { font-size: 0.85rem; padding: 4px 15px; }
         }
     </style>
 </head>
@@ -128,6 +144,7 @@
         <div class="hero-content">
             <h1>助农知识库</h1>
             <p>传递农业科技，分享致富经验，汇聚乡村振兴智慧</p>
+            <p class="hero-stats">累计访问：<span id="total-visits">0</span>人次，今日访问：<span id="today-visits">0</span>人次</p>
         </div>
     </section>
 
@@ -212,6 +229,23 @@
                     scrollContainer.scrollLeft += event.deltaY;
                 }
             });
+        });
+    </script>
+
+    <script src="config.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (!window.MY_APP_CONFIG || !window.MY_APP_CONFIG.apiBaseUrl) return;
+            fetch(window.MY_APP_CONFIG.apiBaseUrl)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('total-visits').textContent = data.total_visits;
+                    document.getElementById('today-visits').textContent = data.today_visits;
+                })
+                .catch(() => {
+                    document.getElementById('total-visits').textContent = '-';
+                    document.getElementById('today-visits').textContent = '-';
+                });
         });
     </script>
 </body>
