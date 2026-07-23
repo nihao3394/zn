@@ -35,8 +35,13 @@ export async function onRequestPost(context) {
             return Response.json({ success: false, msg: "请填写完整词条和用途说明" }, { status: 400 });
         }
 
+        // ——— 初始化 WIKI_DB ———
+        const wikiKV = env.WIKI_DB;
+        if (!wikiKV) {
+            return Response.json({ success: false, msg: "WIKI_DB 数据库未绑定" }, { status: 500 });
+        }
+
         // ——— 重复检测：待审核 + 已通过 ———
-        // 遍历待审核列表
         const pendingList = await wikiKV.list({ prefix: "keyword:pending:" });
         for (const key of pendingList.keys) {
             const raw = await wikiKV.get(key.name);
@@ -58,12 +63,6 @@ export async function onRequestPost(context) {
         }
 
         // ——— 写入 WIKI_DB ———
-
-        // ——— 写入 WIKI_DB ———
-        const wikiKV = env.WIKI_DB;
-        if (!wikiKV) {
-            return Response.json({ success: false, msg: "WIKI_DB 数据库未绑定" }, { status: 500 });
-        }
 
         await wikiKV.put(
             `keyword:pending:${username}`,
