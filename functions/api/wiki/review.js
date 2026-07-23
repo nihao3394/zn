@@ -57,14 +57,24 @@ export async function onRequestPost(context) {
         if (action === "approve") {
             // 移到已批准列表
             const approvedId = crypto.randomUUID();
+            const approvedEntry = {
+                keyword: pendingData.keyword,
+                user: pendingData.user || "",
+                usage: pendingData.usage || "",
+                reviewer: sess.user,
+                approvedAt: new Date().toISOString()
+            };
             await wikiKV.put(
                 `keyword:approved:${approvedId}`,
-                JSON.stringify({
-                    keyword: pendingData.keyword,
-                    reviewer: sess.user,
-                    approvedAt: new Date().toISOString()
-                })
+                JSON.stringify(approvedEntry)
             );
+            // 写入聚合列表（主读取路径）
+            const listRaw = await wikiKV.get("keyword:approved:list");
+            const approvedList = listRaw ? JSON.parse(listRaw) : [];
+            approvedList.push(approvedEntry);
+            await wikiKV.put("keyword:approved:list", JSON.stringify(approvedList));
+
+            // 删除待审核键
             await wikiKV.delete(id);
             return Response.json({ success: true, msg: "词条已通过并归档" });
         } else if (action === "reject") {
