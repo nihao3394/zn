@@ -276,24 +276,19 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 汉堡菜单按钮（仅移动端可见） */
         .hamburger {
             display: none;
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 200;
-            background: var(--primary);
-            color: white;
+            background: none;
+            color: var(--primary);
             border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
-            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            font-size: 20px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            flex-shrink: 0;
         }
 
         /* 移动端适配 */
         @media (max-width: 768px) {
-            .hamburger { display: flex; align-items: center; justify-content: center; }
+            .hamburger { display: flex; align-items: center; justify-content: center; margin-right: 6px; }
             .sidebar-resize-handle { display: none; }
 
             .sidebar {
@@ -310,8 +305,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .sidebar.open { left: 0; }
 
             .main-content { width: 100%; }
-            .top-header { padding: 0 12px; height: 48px; }
-            .top-header h3 { font-size: 14px; }
+            .top-header { padding: 0 10px; height: 48px; display: flex; align-items: center; }
+            .top-header h3 { font-size: 14px; flex: 1; }
             .view-panel { padding: 12px; height: calc(100vh - 48px); }
 
             /* 卡片在手机上堆叠 */
@@ -340,7 +335,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 </head>
 <body>
 
-    <button class="hamburger" id="hamburger-btn" onclick="var s=document.querySelector('.sidebar');var o=document.getElementById('sidebar-overlay');s.classList.toggle('open');o.style.display=s.classList.contains('open')?'block':'none'">☰</button>
     <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'"></div>
 
     <div id="toast" class="toast"></div>
