@@ -500,22 +500,33 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         // 页面初始化：权限受控渲染
-        // ——— 自动刷新轮询 ———
+        // ——— 事件驱动轮询 ———
         let pollTimer = null;
-        const POLL_INTERVAL = 10000; // 10 秒
+        const POLL_INTERVAL = 5000; // 事件检测间隔 5 秒
         let currentTab = 'wiki';
+        let lastVersion = 0;
+
+        async function checkVersion() {
+            try {
+                const res = await fetch('/api/system/version', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.version !== lastVersion) {
+                    lastVersion = data.version;
+                    // 版本变动 → 全量刷新当前面板
+                    switch (currentTab) {
+                        case 'user-audit':        loadUserAuditList(); break;
+                        case 'keyword-audit':     loadKeywordAuditList(); break;
+                        case 'keyword-approved':  loadKeywordApprovedList(); break;
+                        case 'members':           loadMemberList(); break;
+                    }
+                }
+            } catch (e) { /* 静默 */ }
+        }
 
         function startPolling() {
             stopPolling();
-            pollTimer = setInterval(() => {
-                switch (currentTab) {
-                    case 'user-audit':   loadUserAuditList(); break;
-                    case 'keyword-audit': loadKeywordAuditList(); break;
-                    case 'keyword-approved':  loadKeywordApprovedList(); break;
-                    case 'members':       loadMemberList(); break;
-                    // wiki 和 settings 不需要刷新
-                }
-            }, POLL_INTERVAL);
+            checkVersion(); // 立即获取初始版本
+            pollTimer = setInterval(checkVersion, POLL_INTERVAL);
         }
 
         function stopPolling() {
