@@ -365,6 +365,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
     <!-- 主操作区 -->
     <main class="main-content">
         <header class="top-header">
+            <button class="hamburger" id="hamburger-btn" onclick="var s=document.querySelector('.sidebar');var o=document.getElementById('sidebar-overlay');s.classList.toggle('open');o.style.display=s.classList.contains('open')?'block':'none'">☰</button>
             <h3 id="panel-title">维基百科镜像</h3>
         </header>
 
