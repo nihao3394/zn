@@ -205,8 +205,8 @@ export async function renderAuthPage() {
                 input, textarea { padding: 12px; font-size: 15px; }
                 .send-btn { width: 100px; font-size: 12px; padding: 10px 6px; }
                 .code-row { gap: 6px; }
-                .toast { left: 5%; right: 5%; transform: translateY(-20px); font-size: 13px; padding: 10px 16px; }
-                .toast.show { transform: translateY(0); }
+                .toast { left: 50%; right: auto; transform: translateX(-50%) translateY(-20px); max-width: 90vw; white-space: nowrap; font-size: 13px; padding: 10px 16px; }
+                .toast.show { transform: translateX(-50%) translateY(0); }
             }
       </style>
   </head>
