@@ -708,15 +708,15 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${data.list.map(item => `
+                                \${data.list.map(item => \`
                                 <tr>
-                                    <td><strong>${item.keyword}</strong></td>
-                                    <td>${item.user || '-'}</td>
-                                    <td>${item.reviewer || '-'}</td>
-                                    <td>${new Date(item.approvedAt).toLocaleString()}</td>
-                                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(item.usage || '').replace(/"/g, '&quot;')}">${(item.usage || '-').substring(0, 30)}</td>
+                                    <td><strong>\${item.keyword}</strong></td>
+                                    <td>\${item.user || '-'}</td>
+                                    <td>\${item.reviewer || '-'}</td>
+                                    <td>\${new Date(item.approvedAt).toLocaleString()}</td>
+                                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="\${(item.usage || '').replace(/"/g, '&quot;')}">\${(item.usage || '-').substring(0, 30)}</td>
                                 </tr>
-                                `).join('')}
+                                \`).join('')}
                             </tbody>
                         </table>
                     \`;
