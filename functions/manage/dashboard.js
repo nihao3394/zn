@@ -335,7 +335,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 </head>
 <body>
 
-    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'"></div>
+    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
 
     <div id="toast" class="toast"></div>
 
