@@ -39,8 +39,15 @@ async function checkAdmin(request, env) {
 // ——— GET：拉取全体成员列表 ———
 async function handleGetUsers(request, env) {
     try {
-        if (!(await checkAdmin(request, env))) {
-            return Response.json({ success: false, msg: "权限不足" }, { status: 403 });
+        // 全体成员列表：所有已登录用户可查看
+        const cookie = request.headers.get("Cookie") || "";
+        const match = cookie.match(/session=([^;]+)/);
+        if (!match) {
+            return Response.json({ success: false, msg: "未登录" }, { status: 401 });
+        }
+        const sessRaw = await env.USER_DB.get(`session:${match[1]}`);
+        if (!sessRaw) {
+            return Response.json({ success: false, msg: "登录已过期" }, { status: 401 });
         }
 
         const KV = env.USER_DB;
