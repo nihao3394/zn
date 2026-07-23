@@ -303,7 +303,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
     <!-- 主操作区 -->
     <main class="main-content">
         <header class="top-header">
-            <h3 id="panel-title">维基百科镜像代理</h3>
+            <h3 id="panel-title">维基百科镜像</h3>
         </header>
 
         <!-- 1. 维基百科面板 -->
@@ -534,7 +534,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             document.getElementById(\`panel-\${tabKey}\`).classList.add('active');
             
             const titles = {
-                'wiki': '维基百科镜像代理',
+                'wiki': '维基百科镜像',
                 'user-audit': '用户注册申请审核',
                 'keyword-audit': '待审核词条管理',
                 'members': '全体成员列表',
