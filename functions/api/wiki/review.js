@@ -68,7 +68,7 @@ export async function onRequestPost(context) {
                 `keyword:approved:${approvedId}`,
                 JSON.stringify(approvedEntry)
             );
-            await KV.put("system:mutation_version", String(Date.now()));
+            await userKV.put("system:mutation_version", String(Date.now()));
             // 写入聚合列表（主读取路径）
             const listRaw = await wikiKV.get("keyword:approved:list");
             const approvedList = listRaw ? JSON.parse(listRaw) : [];
@@ -77,11 +77,11 @@ export async function onRequestPost(context) {
 
             // 删除待审核键
             await wikiKV.delete(id);
-            await KV.put("system:mutation_version", String(Date.now()));
+            await userKV.put("system:mutation_version", String(Date.now()));
             return Response.json({ success: true, msg: "词条已通过并归档" });
         } else if (action === "reject") {
             await wikiKV.delete(id);
-            await KV.put("system:mutation_version", String(Date.now()));
+            await userKV.put("system:mutation_version", String(Date.now()));
             return Response.json({ success: true, msg: "词条申请已驳回" });
         } else {
             return Response.json({ success: false, msg: "无效的操作类型" }, { status: 400 });

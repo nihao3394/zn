@@ -73,7 +73,7 @@ export async function onRequestPost(context) {
                 createdAt: new Date().toISOString()
             })
         );
-        await KV.put("system:mutation_version", String(Date.now()));
+        await userKV.put("system:mutation_version", String(Date.now()));
 
         return Response.json({ success: true, msg: "词条申请已提交，等待审核" });
     } catch (e) {
