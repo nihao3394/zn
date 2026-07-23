@@ -43,6 +43,8 @@
         /* 模块通用标题 */
         .section-title { text-align: center; margin: 40px 0 10px; color: #2e7d32; font-size: 1.8rem; }
         .section-subtitle { text-align: center; margin-bottom: 30px; color: #666; font-size: 0.95rem; }
+        .desktop-only { display: inline; }
+        .mobile-only  { display: none;  }
         
         /* ==========================================
            横向滑动卡片与边缘淡出样式
@@ -101,6 +103,8 @@
             .hero h1 { font-size: 2rem; padding: 0 10px; }
             .hero { height: 280px; }
             .card-link { flex: 0 0 260px; } /* 移动端卡片稍微改窄一点 */
+            .desktop-only { display: none;  }
+            .mobile-only  { display: inline; }
         }
     </style>
 </head>
@@ -129,7 +133,7 @@
 
     <main class="container" id="wiki-catalog">
         <h2 class="section-title">知识库目录</h2>
-        <p class="section-subtitle">滑动鼠标滚轮或左右拖动，查看更多知识文档</p>
+        <p class="section-subtitle"><span class="desktop-only">滑动鼠标滚轮，查看更多知识文档</span><span class="mobile-only">左右拖动，查看更多知识文档</span></p>
         
         <!-- 增加了包裹层和滚动容器 -->
         <div class="scroll-wrapper">
