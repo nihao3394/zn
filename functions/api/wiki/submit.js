@@ -41,6 +41,27 @@ export async function onRequestPost(context) {
             return Response.json({ success: false, msg: "WIKI_DB 数据库未绑定" }, { status: 500 });
         }
 
+        // ——— 重复检测：待审核 + 已通过 ———
+        const pendingList = await wikiKV.list({ prefix: "keyword:pending:" });
+        for (const key of pendingList.keys) {
+            const raw = await wikiKV.get(key.name);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.keyword === keyword) {
+                    return Response.json({ success: false, msg: "该词条已经存在" }, { status: 409 });
+                }
+            }
+        }
+
+        // 检查已通过聚合列表
+        const approvedRaw = await wikiKV.get("keyword:approved:list");
+        if (approvedRaw) {
+            const approvedList = JSON.parse(approvedRaw);
+            if (approvedList.some(item => item.keyword === keyword)) {
+                return Response.json({ success: false, msg: "该词条已经存在" }, { status: 409 });
+            }
+        }
+
         // ——— 写入 WIKI_DB ———
 
         await wikiKV.put(

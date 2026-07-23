@@ -286,6 +286,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <li class="nav-item active" onclick="switchTab('wiki')">🌐 维基百科</li>
                 <li class="nav-item role-admin-only" onclick="switchTab('user-audit')">📝 注册审核 <span id="user-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-reviewer-only" onclick="switchTab('keyword-audit')">🔍 词条审核 <span id="kw-pending-count" class="role-badge">0</span></li>
+                <li class="nav-item" onclick="switchTab('keyword-approved')">✅ 过审词条</li>
                 <li class="nav-item" onclick="switchTab('members')">👥 全体成员</li>
                 <li class="nav-item" onclick="switchTab('settings')">⚙️ 个人设置</li>
             </ul>
@@ -343,6 +344,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             <div id="keyword-audit-list">
                 <!-- 动态渲染长条卡片 -->
             </div>
+        </section>
+
+        <!-- 3.5. 过审词条面板 (所有身份可见) -->
+        <section id="panel-keyword-approved" class="view-panel">
+            <div id="keyword-approved-list"></div>
         </section>
 
         <!-- 4. 全体成员面板 -->
@@ -474,10 +480,22 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         let forgetOtpVerified = false;
 
-        function showToast(msg) {
+        function showToast(msg,type) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.display = 'block';
+
+            // 按类型换色
+            if (type === 'success') {
+                toast.style.background = '#2e7d32';
+            } else if (type === 'warn') {
+                toast.style.background = '#e6a817';
+                toast.style.color = '#333';
+            } else {
+                toast.style.background = '#333';
+                toast.style.color = 'white';
+            }
+                
             setTimeout(() => { toast.style.display = 'none'; }, 2500);
         }
 
@@ -493,6 +511,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 switch (currentTab) {
                     case 'user-audit':   loadUserAuditList(); break;
                     case 'keyword-audit': loadKeywordAuditList(); break;
+                    case 'keyword-approved':  loadKeywordApprovedList(); break;
                     case 'members':       loadMemberList(); break;
                     // wiki 和 settings 不需要刷新
                 }
@@ -507,6 +526,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             applyRolePermissions();
             loadUserAuditList();
             loadKeywordAuditList();
+            loadKeywordApprovedList();
             loadMemberList();
             startPolling();
         });
@@ -537,6 +557,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 'wiki': '维基百科镜像',
                 'user-audit': '用户注册申请审核',
                 'keyword-audit': '待审核词条管理',
+                'keyword-approved': '已通过词条列表',
                 'members': '全体成员列表',
                 'settings': '个人控制台设置'
             };
@@ -617,9 +638,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast("已提交词条申请，等待词条审核员审核");
+                    showToast("已提交词条申请，等待词条审核员审核","success");
                     clearKwForm();
                     closeDrawer();
+                } else if (data.msg === "该词条已经存在") {
+                    showToast("该词条已经存在", "warn");
                 } else {
                     showToast(data.msg || "提交失败");
                 }
@@ -660,6 +683,45 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     \`).join('');
                 } else {
                     container.innerHTML = '<p style="color:#999;text-align:center;">当前无待审核的词条</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;text-align:center;">加载失败: ' + (e.message || e) + '</p>';
+            }
+        }
+
+        async function loadKeywordApprovedList() {
+            const container = document.getElementById('keyword-approved-list');
+            container.innerHTML = '<p style="color:#999;text-align:center;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/wiki/approved', { method: 'GET', cache: 'no-store' });
+                const data = await res.json();
+                if (data.success && data.list && data.list.length > 0) {
+                    container.innerHTML = \`
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>关键词</th>
+                                    <th>提交者</th>
+                                    <th>审核员</th>
+                                    <th>通过时间</th>
+                                    <th>用途说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.list.map(item => `
+                                <tr>
+                                    <td><strong>${item.keyword}</strong></td>
+                                    <td>${item.user || '-'}</td>
+                                    <td>${item.reviewer || '-'}</td>
+                                    <td>${new Date(item.approvedAt).toLocaleString()}</td>
+                                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(item.usage || '').replace(/"/g, '&quot;')}">${(item.usage || '-').substring(0, 30)}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    \`;
+                } else {
+                    container.innerHTML = '<p style="color:#999;text-align:center;">暂无已通过的词条</p>';
                 }
             } catch (e) {
                 container.innerHTML = '<p style="color:red;text-align:center;">加载失败: ' + (e.message || e) + '</p>';
