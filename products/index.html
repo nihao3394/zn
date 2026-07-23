@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地道农产品 - 绿色助农·点亮乡村未来</title>
+    <style>
+        /* ==========================================
+           基础样式布局与平滑滚动（统一设计规范）
+           ========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.6; background-color: #f9f9f9; }
+        .container { width: 85%; max-width: 1200px; margin: 0 auto; }
+        
+        /* 导航栏样式 */
+        header { background-color: #2e7d32; color: white; padding: 15px 0; }
+        .nav-box { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { list-style: none; display: flex; gap: 20px; }
+        
+        .nav-links a { 
+            color: white; 
+            text-decoration: none; 
+            font-weight: bold; 
+            padding: 6px 14px; 
+            border-radius: 4px; 
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: linear-gradient(135deg, #a5d6a7, #81c784);
+            color: #1b5e20;
+        }
+
+        /* 顶部 Banner 与玻璃拟态统计框 */
+        .hero { 
+            background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80') no-repeat center center/cover;
+            height: 380px; color: white; display: flex; align-items: center; text-align: center;
+        }
+        .hero-content { width: 100%; }
+        .hero h1 { font-size: 2.8rem; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        .hero p { font-size: 1.1rem; max-width: 700px; margin: 0 auto; }
+        
+        .hero-stats {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.95rem;
+            margin-top: 20px;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 6px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .hero-stats span { font-weight: bold; color: #fff59d; margin: 0 3px; }
+
+        /* 产品分类筛选栏 */
+        .filter-section { margin: 40px 0 20px; text-align: center; }
+        .filter-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .filter-btn {
+            background: white;
+            border: 1px solid #a5d6a7;
+            color: #1b5e20;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background-color: #2e7d32;
+            color: white;
+            border-color: #2e7d32;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+        }
+
+        /* 模块通用与网格布局 */
+        .section-title { text-align: center; margin: 20px 0 10px; color: #2e7d32; font-size: 1.8rem; }
+        .section-subtitle { text-align: center; color: #666; font-size: 0.95rem; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-bottom: 40px; }
+        
+        /* 农产品卡片（带定位角标与动作按钮） */
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            text-align: left; 
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15); 
+        }
+        .card-img-wrapper { position: relative; height: 210px; overflow: hidden; }
+        .card-img-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+        .card:hover .card-img-wrapper img { transform: scale(1.05); }
+        
+        .card-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(46, 125, 50, 0.9);
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        
+        .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card h3 { margin-bottom: 8px; color: #1b5e20; font-size: 1.2rem; }
+        .card p { color: #666; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5; }
+        
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px dashed #e0e0e0;
+        }
+        .origin-tag { font-size: 0.85rem; color: #7f8c8d; display: flex; align-items: center; gap: 4px; }
+        .buy-btn {
+            background-color: #2e7d32;
+            color: white;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .buy-btn:hover { background-color: #1b5e20; }
+
+        /* 源头品质保证说明模块 */
+        .story-section { background-color: #edf5ee; padding: 40px 0; border-radius: 8px; margin-bottom: 40px; }
+        .story-content { display: flex; flex-wrap: wrap; gap: 30px; align-items: center; }
+        .story-text { flex: 1; min-width: 300px; }
+        .story-img { flex: 1; min-width: 300px; border-radius: 8px; max-height: 300px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        /* 页脚 */
+        footer { background-color: #1b5e20; color: white; text-align: center; padding: 20px 0; margin-top: 40px; font-size: 0.9rem; }
+        footer p { margin-bottom: 6px; }
+
+        /* 移动端响应式适配 */
+        @media (max-width: 768px) {
+            .container { width: 90%; }
+            .nav-box { flex-direction: column; gap: 15px; text-align: center; }
+            .nav-links { gap: 10px; justify-content: center; }
+            .nav-links a { padding: 5px 10px; font-size: 0.9rem; }
+            .hero { height: 320px; }
+            .hero h1 { font-size: 2rem; padding: 0 10px; }
+            .hero p { font-size: 0.95rem; padding: 0 10px; }
+            .hero-stats { font-size: 0.85rem; padding: 4px 15px; }
+            .filter-tags { gap: 8px; }
+            .filter-btn { padding: 6px 12px; font-size: 0.82rem; }
+            .grid { grid-template-columns: 1fr; } /* 移动端单列卡片优雅显示 */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 导航栏 -->
+    <header>
+        <div class="container nav-box">
+            <h2>乡村振兴·助农前线</h2>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/wiki/">知识库</a></li>
+                    <li><a href="/products/" class="active">农产品</a></li>
+                    <li><a href="/about/">关于项目</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 横幅 -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>寻味原野·极鲜直达</h1>
+            <p>精选地理标志与高山生态农产品，源头直发保留纯粹自然之味</p>
+            <p class="hero-stats">累计访问：<span id="total-visits">0</span>人次，今日访问：<span id="today-visits">0</span>人次</p>
+        </div>
+    </section>
+
+    <!-- 分类筛选与农产品展示列表 -->
+    <main class="container" id="product-section">
+        <div class="filter-section">
+            <h2 class="section-title">乡村地道特色农产</h2>
+            <p class="section-subtitle">严格把控品质，每一款农产都凝聚着果农与耕者的辛勤付出</p>
+            
+            <div class="filter-tags">
+                <button class="filter-btn active" onclick="filterProducts('all', this)">全部农产</button>
+                <button class="filter-btn" onclick="filterProducts('veg', this)">生态蔬果</button>
+                <button class="filter-btn" onclick="filterProducts('grain', this)">优质粮油</button>
+                <button class="filter-btn" onclick="filterProducts('special', this)">深山干货</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- 产品 1 -->
+            <div class="card" data-category="veg">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">高山直供</span>
+                    <img src="https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=400&q=80" alt="新鲜蔬菜">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>高山生态有机蔬果</h3>
+                        <p>引高山清泉灌溉，纯人工除草，保留作物最本真的鲜甜与丰富膳食纤维。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 湖北恩施高山基地</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品 2 -->
+            <div class="card" data-category="grain">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">地理标志</span>
+                    <img src="https://ts1.tc.mm.bing.net/th/id/OIP-C.odqMwCgSsemzSNeqNGFpYQHaE8?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="优质大米">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>富硒生态原米</h3>
+                        <p>传统一年一熟稻谷，天然富硒土壤滋养，颗粒饱满，煮饭浓郁留香。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 黑龙江响水稻区</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品 3 -->
+            <div class="card" data-category="veg">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">果园现摘</span>
+                    <img src="https://tse1-mm.cn.bing.net/th/id/OIP-C.-aZSuaes6AMLKT-8qlGt4AAAAA?w=290&h=194&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3" alt="时令水果">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>现摘多汁红富士</h3>
+                        <p>果园现摘现发，自然向阳熟化，果肉清脆多汁，甜度适口，助农果农增收。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 陕西洛川苹果基地</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品 4 -->
+            <div class="card" data-category="special">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">深山采摘</span>
+                    <img src="https://images.unsplash.com/photo-1509358271058-acd02cc93858?auto=format&fit=crop&w=400&q=80" alt="椴木木耳">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>秦岭椴木黑木耳</h3>
+                        <p>森林野生环境培育，朵大肉厚，泡发率高，口感爽脆，营养丰富。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 陕西秦岭深山合作社</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品 5 -->
+            <div class="card" data-category="grain">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">古法压榨</span>
+                    <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=400&q=80" alt="古法菜籽油">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>农家小榨菜籽油</h3>
+                        <p>非转基因菜籽，遵循传统物理压榨工序，色泽金黄透明，香味醇厚。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 四川成都平原产区</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品 6 -->
+            <div class="card" data-category="special">
+                <div class="card-img-wrapper">
+                    <span class="card-badge">天然纯酿</span>
+                    <img src="https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=400&q=80" alt="深山蜂蜜">
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>高山百花天然土蜂蜜</h3>
+                        <p>深山中华蜂自然采集花蜜，不经过度加工，保留活性酶与自然天然芳香。</p>
+                    </div>
+                    <div class="card-meta">
+                        <span class="origin-tag">📍 云南神农架周边山林</span>
+                        <a href="#footer" class="buy-btn">了解采购</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 直采保障与质检说明 -->
+    <section class="story-section" id="guarantee">
+        <div class="container story-content">
+            <div class="story-text">
+                <h2 style="color: #2e7d32; margin-bottom: 15px;">源头直采·四重品质承诺</h2>
+                <p style="margin-bottom: 15px; text-indent: 2em;">我们深入全国多个乡村定点合作社，从种植环境、灌溉水源到采摘包装进行全程品质把控，确保每一份送到您手中的农产都安全可靠。</p>
+                <p style="text-indent: 2em;">通过数字去中间化模式，我们让消费者获得高品质生鲜农产品的同时，把收益直接留给乡村的真正生产者。</p>
+            </div>
+            <img class="story-img" src="https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=500&q=80" alt="农产品质检与包装">
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer id="footer">
+        <div class="container">
+            <p>© 2026 乡村振兴助农宣传 Demo 页. 数据及图片来源于网络公开资料.</p>
+            <p>联系邮箱：nihaoaaaaa@webmail.hzau.edu.cn | 让乡村的发展被更多人看到</p>
+        </div>
+    </footer>
+
+    <!-- 配置文件与访问统计脚本 -->
+    <script src="config.js"></script>
+    <script>
+        // 分类筛选逻辑
+        function filterProducts(category, btn) {
+            // 更新按钮选中状态
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 筛选卡片显示
+            const cards = document.querySelectorAll('.grid .card');
+            cards.forEach(card => {
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // 安全检查：防止本地没配置 config.js 时导致页面彻底崩溃
+            if (!window.MY_APP_CONFIG || !window.MY_APP_CONFIG.apiBaseUrl) {
+                console.error('未找到 API 配置文件，请检查 config.js 是否存在');
+                return;
+            }
+            
+            fetch(window.MY_APP_CONFIG.apiBaseUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('网络异常');
+                    return response.json();
+                })
+                .then(data => {
+                    // 将后端计算并序列化后的全局统计数据渲染到页面
+                    document.getElementById('total-visits').textContent = data.total_visits;
+                    document.getElementById('today-visits').textContent = data.today_visits;
+                })
+                .catch(err => {
+                    console.error('获取访问统计失败:', err);
+                    document.getElementById('total-visits').textContent = '-';
+                    document.getElementById('today-visits').textContent = '-';
+                });
+        });
+    </script>
+    <!-- Cloudflare Pages Analytics -->
+    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "aa9bc9a98d3c4e54b7934006fec09174"}'></script>
+</body>
+</html>
