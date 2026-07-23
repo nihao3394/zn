@@ -194,6 +194,20 @@ export async function renderAuthPage() {
             .toast.success {
                 background: rgba(46, 125, 50, 0.9);
             }
+
+            /* 手机端适配 */
+            @media (max-width: 480px) {
+                body::before { width:200px; height:200px; top:-80px; left:-80px; }
+                body::after  { width:180px; height:180px; bottom:-60px; right:-60px; }
+                .container { width: 94%; padding: 24px 16px; }
+                .tabs { margin-bottom: 16px; }
+                .tab { padding: 8px 4px; font-size: 13px; }
+                input, textarea { padding: 12px; font-size: 15px; }
+                .send-btn { width: 100px; font-size: 12px; padding: 10px 6px; }
+                .code-row { gap: 6px; }
+                .toast { left: 5%; right: 5%; transform: translateY(-20px); font-size: 13px; padding: 10px 16px; }
+                .toast.show { transform: translateY(0); }
+            }
       </style>
   </head>
   <body>

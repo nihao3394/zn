@@ -272,9 +272,76 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .sidebar-resize-handle.dragging {
             background: rgba(46, 125, 50, 0.2);
         }
+
+        /* 汉堡菜单按钮（仅移动端可见） */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 200;
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .hamburger { display: flex; align-items: center; justify-content: center; }
+            .sidebar-resize-handle { display: none; }
+
+            .sidebar {
+                position: fixed;
+                top: 0; left: -100%;
+                width: 260px;
+                min-width: 260px;
+                max-width: 80vw;
+                height: 100vh;
+                z-index: 150;
+                transition: left 0.3s ease;
+                box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+            }
+            .sidebar.open { left: 0; }
+
+            .main-content { width: 100%; }
+            .top-header { padding: 0 12px; height: 48px; }
+            .top-header h3 { font-size: 14px; }
+            .view-panel { padding: 12px; height: calc(100vh - 48px); }
+
+            /* 卡片在手机上堆叠 */
+            .horizontal-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 14px 16px;
+            }
+            .card-meta { flex-direction: column; gap: 6px; }
+
+            /* 成员表格横向滚动 */
+            .member-table { display: block; overflow-x: auto; font-size: 12px; }
+            .member-table th, .member-table td { padding: 8px 10px; white-space: nowrap; }
+
+            /* Modal 宽度自适应 */
+            .modal-card { width: 95%; max-width: none; padding: 16px; }
+
+            /* Toast 不超出屏幕 */
+            .toast { left: 8px; right: 8px; top: auto; bottom: 16px; width: auto; text-align: center; }
+
+            /* wiki 抽屉在手机上占满 */
+            .wiki-drawer { width: 280px; right: -280px; }
+        }
     </style>
 </head>
 <body>
+
+    <button class="hamburger" id="hamburger-btn" onclick="var s=document.querySelector('.sidebar');var o=document.getElementById('sidebar-overlay');s.classList.toggle('open');o.style.display=s.classList.contains('open')?'block':'none'">☰</button>
+    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'"></div>
 
     <div id="toast" class="toast"></div>
 
@@ -574,6 +641,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             };
             document.getElementById('panel-title').innerText = titles[tabKey] || '控制台';
             currentTab = tabKey;
+
+            // 移动端：点击导航项后自动收起侧边栏
+            document.querySelector('.sidebar').classList.remove('open');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay) overlay.style.display = 'none';
         }
 
         /* ----- 功能一：注册审核与词条审核卡片弹窗逻辑 ----- */

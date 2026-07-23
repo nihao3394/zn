@@ -129,6 +129,15 @@ function getGateHtml() {
             button:hover { background:#1b5e20; }
             .footer { margin-top:25px; font-size:12px; color:#777; }
             #msg-box { margin-top: 15px; font-size: 14px; min-height: 20px; }
+
+            /* 手机端适配 */
+            @media (max-width: 480px) {
+                body::before { width:200px; height:200px; top:-80px; left:-80px; }
+                body::after  { width:180px; height:180px; bottom:-60px; right:-60px; }
+                .card { padding: 28px 20px; }
+                h1 { font-size: 22px; }
+                input, button { padding: 12px; font-size: 15px; }
+            }
         </style>
     </head>
     <body>
