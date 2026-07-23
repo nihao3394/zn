@@ -616,6 +616,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     showToast(type === 'approve' ? '已批准 ' + user + ' 的注册申请' : '已驳回 ' + user + ' 的注册申请');
                     closeModal('modal-audit');
                     loadUserAuditList(); // 刷新列表
+                    if (type === 'approve') loadMemberList(); // 批准后刷新全体成员
                 } else {
                     showToast(data.msg || '操作失败');
                 }
@@ -752,6 +753,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     showToast(type === 'approve' ? "词条已通过并归档至数据库" : "词条申请已驳回");
                     closeModal('modal-audit');
                     loadKeywordAuditList(); // 刷新列表
+                    if (type === 'approve') loadKeywordApprovedList(); // 批准后刷新过审词条
                 } else {
                     showToast(data.msg || "操作失败");
                 }
@@ -799,13 +801,13 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('已将 ' + targetUser + ' 的身份更新为: ' + newRole);
+                    showToast('已将 ' + targetUser + ' 的身份更新为: ' + newRole, 'success');
                     loadMemberList(); // 刷新列表
                 } else {
-                    showToast(data.msg || "操作失败");
+                    showToast(data.msg || "操作失败", 'error');
                 }
             } catch (e) {
-                showToast("操作失败: " + (e.message || e));
+                showToast("操作失败: " + (e.message || e), 'error');
             }
         }
 

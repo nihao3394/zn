@@ -925,6 +925,7 @@ async function handleApproveUser(request, env) {
         userData.status = "approved"; // 更新状态为已通过
         
         await KV.put(userKey, JSON.stringify(userData));
+        await KV.put("system:mutation_version", String(Date.now())); // 更新系统版本号
         return Response.json({ success: true, msg: "已批准该用户注册" });
     } catch (e) {
         return Response.json({ success: false, msg: "操作失败" });
@@ -952,7 +953,7 @@ async function handleRejectUser(request, env) {
         if (userData.email) {
             await KV.delete(`email:${userData.email}`); // 驳回时同步清理绑定的邮箱映射
         }
-
+        await KV.put("system:mutation_version", String(Date.now())); // 更新系统版本号
         return Response.json({ success: true, msg: "已驳回该申请记录" });
     } catch (e) {
         return Response.json({ success: false, msg: "操作失败" }, { status: 500 });

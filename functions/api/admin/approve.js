@@ -20,6 +20,7 @@ export async function onRequestPost(context) {
         const userData = JSON.parse(raw);
         userData.status = "approved";
         await KV.put(userKey, JSON.stringify(userData));
+        await KV.put("system:mutation_version", String(Date.now()));
 
         return Response.json({ success: true, msg: "已批准该用户注册" });
     } catch (e) {

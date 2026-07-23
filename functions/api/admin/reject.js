@@ -23,6 +23,7 @@ export async function onRequestPost(context) {
             await KV.delete(`email:${userData.email}`);
         }
 
+        await KV.put("system:mutation_version", String(Date.now()));
         return Response.json({ success: true, msg: "已驳回该申请记录" });
     } catch (e) {
         return Response.json({ success: false, msg: "操作失败" }, { status: 500 });

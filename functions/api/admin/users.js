@@ -104,6 +104,7 @@ async function handleUpdateRole(request, env) {
         const userData = JSON.parse(raw);
         userData.role = role;
         await KV.put(userKey, JSON.stringify(userData));
+        await KV.put("system:mutation_version", String(Date.now())); // 更新系统版本号
 
         return Response.json({ success: true, msg: `已将 ${targetUser} 的身份更新为 ${role}` });
     } catch (e) {
