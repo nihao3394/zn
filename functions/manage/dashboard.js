@@ -737,6 +737,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 btn.setAttribute('data-id', CATEGORIES.parents[i]?.id || '');
             });
             loadUserAuditList();
+            loadArticleAuditList();
             loadKeywordAuditList();
             loadKeywordApprovedList();
             loadMyArticles();
