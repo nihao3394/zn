@@ -373,6 +373,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <li class="nav-item active" onclick="switchTab('wiki')">🌐 维基百科</li>
                 <li class="nav-item" onclick="switchTab('article-editor')">✏️ 文章撰写</li>
                 <li class="nav-item role-admin-only" onclick="switchTab('user-audit')">📝 注册审核 <span id="user-pending-count" class="role-badge">0</span></li>
+                <li class="nav-item role-article-reviewer-only" onclick="switchTab('article-audit')">📄 文章审核 <span id="article-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-reviewer-only" onclick="switchTab('keyword-audit')">🔍 词条审核 <span id="kw-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item" onclick="switchTab('keyword-approved')">✅ 过审词条</li>
                 <li class="nav-item" onclick="switchTab('members')">👥 全体成员</li>
@@ -443,9 +444,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 </div>
 
                 <div class="form-group">
-                    <label>自定义标签（输入后回车添加）</label>
+                    <label>自定义标签</label>
                     <div class="tag-input-row" id="tag-row">
-                        <input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">
+                        <input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="标签之间以逗号分隔" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">
                     </div>
                 </div>
 
@@ -785,7 +786,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             row.innerHTML = articleTags.map(t =>
                 \`<span class="tag-chip">\${t}<span class="tag-remove" onclick="removeTag('\${t}')">×</span></span>\`
             ).join('') +
-                '<input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">';
+                '<input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="标签之间以逗号分隔" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">';
         }
 
         // ——— Vditor 初始化 ———
