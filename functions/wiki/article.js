@@ -61,10 +61,6 @@ export async function onRequest(context) {
     </style>
 </head>
 <body>
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* 让 body 的最小高度等于浏览器视口高度 */
-
 <header><div class="container nav-box">
     <h2>乡村振兴·助农前线</h2>
     <nav><ul class="nav-links">
@@ -90,8 +86,6 @@ export async function onRequest(context) {
 </main>
 
 <footer>
-    /* 修改 margin-top 为 auto，在 flex 布局中它会自动利用所有剩余空间，把页脚推到最底部 */
-    margin-top: auto; 
     <div class="container"><p>© 2026 乡村振兴助农宣传 Demo 页</p></div>
 </footer>
 <script>
