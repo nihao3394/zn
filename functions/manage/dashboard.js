@@ -1041,11 +1041,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 });
                 clearTimeout(timeout);
 
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
                 const data = await res.json();
                 if (data.success) {
                     if (!isUpdate) currentArticleId = data.article_id;
