@@ -59,6 +59,14 @@ export async function onRequestPost(context) {
         // 提前生成并固定文章 ID，避免二次查询
         const articleId = crypto.randomUUID();
 
+        // 标签归一化：支持中英文逗号分隔的字符串转为数组
+        let normalizedTags = [];
+        if (typeof tags === "string") {
+            normalizedTags = tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20);
+        } else if (Array.isArray(tags)) {
+            normalizedTags = tags.slice(0, 20);
+        }
+
         // 自动继承子类标签
         const catInfo = await db.prepare("SELECT tag FROM categories WHERE id = ?").bind(category_id).first();
         if (catInfo && catInfo.tag) {
@@ -69,15 +77,6 @@ export async function onRequestPost(context) {
         await db.prepare(
             "INSERT INTO articles (id, title, content, author, category_id, status, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         ).bind(articleId, title, content, username, category_id, status, finalSlug, now, now).run();
-
-        // 写入标签
-        // 标签归一化：支持中英文逗号分隔的字符串转为数组
-        let normalizedTags = [];
-        if (typeof tags === "string") {
-            normalizedTags = tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20);
-        } else if (Array.isArray(tags)) {
-            normalizedTags = tags.slice(0, 20);
-        }
 
         // 使用 db.batch() 批量执行标签插入，大幅降低 D1 请求延迟
         if (normalizedTags && normalizedTags.length > 0) {
