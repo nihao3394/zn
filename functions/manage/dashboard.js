@@ -1064,7 +1064,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     currentArticleId = null;
                     saveArticle(action);
                     return;
-            } else { msgBox.style.color = 'red'; msgBox.innerText = data.msg; 
+            } else { msgBox.style.color = 'red'; msgBox.innerText = data.msg; }
             } catch (e) { msgBox.style.color = 'red'; msgBox.innerText = '网络异常: ' + (e.message || e); }
         }
 
