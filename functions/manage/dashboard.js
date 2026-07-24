@@ -1145,6 +1145,17 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             document.querySelector('.sidebar').classList.remove('open');
             const overlay = document.getElementById('sidebar-overlay');
             if (overlay) overlay.style.display = 'none';
+
+            // 切换 tab 时自动刷新数据
+            switch (tabKey) {
+                case 'user-audit': loadUserAuditList(); break;
+                case 'article-audit': loadArticleAuditList(); break;
+                case 'keyword-audit': loadKeywordAuditList(); break;
+                case 'keyword-approved': loadKeywordApprovedList(); break;
+                case 'article-approved': loadArticleApprovedList(); break;
+                case 'my-articles': loadMyArticles(); break;
+                case 'members': loadMemberList(); break;
+            }
         }
 
         /* ----- 功能一：注册审核与词条审核卡片弹窗逻辑 ----- */
