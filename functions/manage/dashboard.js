@@ -1093,7 +1093,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 // 动态渲染分类下拉框
                 const catSelect = document.getElementById('my-article-cat-select');
                 catSelect.innerHTML = Object.values(CATEGORIES.subs).flat().map(s => 
-                    \`<option value="\${s.id}">${s.name}</option>\`
+                    \`<option value="\${s.id}">\${s.name}</option>\`
                 ).join('');
                 
                 // 数据回显绑定：优先匹配 category_id
