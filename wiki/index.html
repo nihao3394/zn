@@ -152,61 +152,34 @@
         <h2 class="section-title">知识库目录</h2>
         <p class="section-subtitle"><span class="desktop-only">滑动鼠标滚轮，查看更多知识文档</span><span class="mobile-only">左右拖动，查看更多知识文档</span></p>
         
-        <!-- 增加了包裹层和滚动容器 -->
+        <!-- 动态加载卡片列表 -->
         <div class="scroll-wrapper">
             <div class="scroll-container" id="scroll-container">
-                <!-- 类别 1 -->
-                <a href="/wiki/list?cat=modern-farming" class="card-link">
-                    <div class="card">
-                        <img src="https://img95.699pic.com/photo/60068/7155.jpg_wh860.jpg" alt="现代农业种植技术">
-                        <h3>现代农业种植技术</h3>
-                        <p>介绍科学育苗、测土配方施肥以及大棚温控等现代种植基础知识。</p>
-                        <span class="tag">种植技术</span>
-                    </div>
-                </a>
-
-                <!-- 类别 2 -->
-                <a href="/wiki/list?cat=pest-control" class="card-link">
-                    <div class="card">
-                        <img src="https://nync.yn.gov.cn/uploadfile/s38/2022/0721/20220721085410362.jpg" alt="病虫害绿色防治">
-                        <h3>病虫害绿色防治指南</h3>
-                        <p>汇总常见农作物病虫害图谱，以及物理、生物防控的无公害处理方案。</p>
-                        <span class="tag">生态保护</span>
-                    </div>
-                </a>
-
-                <!-- 类别 3 -->
-                <a href="/wiki/list?cat=ecommerce" class="card-link">
-                    <div class="card">
-                        <img src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=400&q=80" alt="农产品电商运营">
-                        <h3>农产品电商运营入门</h3>
-                        <p>手把手教你如何开店、拍摄农产品以及利用短视频直播拓宽销路。</p>
-                        <span class="tag">数字赋能</span>
-                    </div>
-                </a>
-
-                <!-- 类别 4 -->
-                <a href="/wiki/list?cat=recent-policies" class="card-link">
-                    <div class="card">
-                        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" alt="惠农政策解读">
-                        <h3>近年惠农政策解读</h3>
-                        <p>汇编最新农业补贴申请流程、农村金融信贷政策及返乡创业支持。</p>
-                        <span class="tag">政策指南</span>
-                    </div>
-                </a>
-                
-                <!-- 类别 5 -->
-                <a href="/wiki/list?cat=rural-tourism" class="card-link">
-                    <div class="card">
-                        <img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=400&q=80" alt="乡村旅游开发">
-                        <h3>乡村旅游与文创开发</h3>
-                        <p>解析如何结合本地特色打造农文旅融合IP，带动周边产业协同发展。</p>
-                        <span class="tag">产业融合</span>
-                    </div>
-                </a>
             </div>
         </div>
     </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function() {
+            const container = document.getElementById('scroll-container');
+            try {
+                const res = await fetch('/api/articles/categories');
+                const data = await res.json();
+                const subs = (data.list || []).filter(c => c.parent_id && c.image_url);
+                if (subs.length === 0) return;
+                container.innerHTML = subs.map(c => `
+                    <a href="/wiki/list?cat=${c.slug}" class="card-link">
+                        <div class="card">
+                            <img src="${c.image_url}" alt="${c.name}">
+                            <h3>${c.name}</h3>
+                            <p>${c.description || ''}</p>
+                            <span class="tag">${c.tag || ''}</span>
+                        </div>
+                    </a>
+                `).join('');
+            } catch(e) { console.error('加载分类失败', e); }
+        });
+    </script>
 
     <footer id="footer">
         <div class="container">
