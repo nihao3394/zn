@@ -621,6 +621,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <label>标签（逗号分隔）</label>
                 <input type="text" id="my-article-tags" class="form-control" placeholder="标签1,标签2">
             </div>
+            <!-- 文章分类下拉框 -->
+            <div class="form-group">
+                <label>文章分类</label>
+                <select id="my-article-cat-select" class="form-control"></select>
+            </div>
             <div style="color:#999;font-size:12px;margin-bottom:8px;">
                 状态：<span id="my-article-status"></span> | 分类：<span id="my-article-cat"></span>
             </div>
@@ -923,7 +928,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             msgBox.innerText = action === 'draft' ? '正在保存...' : '正在提交审核...';
 
             const payload = { title, content, category_id: selectedSubId, tags: articleTags.join(","), action };
-            const isUpdate = currentArticleId && action !== 'submit';
+            
+            // 只要当前有已创建的 currentArticleId，无论什么 action 都视为更新
+            const isUpdate = !!currentArticleId;
 
             try {
                 const url = isUpdate ? '/api/articles/update' : '/api/articles/submit';
@@ -1082,14 +1089,29 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 document.getElementById('my-article-content').value = article.content;
                 document.getElementById('my-article-tags').value = (article.tags || []).join(',');
                 document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
-                document.getElementById('my-article-cat').innerText = article.cat_name || '-';
-                document.getElementById('my-article-tags').value = (article.tags || []).join(',');
+
+                // 动态渲染分类下拉框
+                const catSelect = document.getElementById('my-article-cat-select');
+                catSelect.innerHTML = Object.values(CATEGORIES.subs).flat().map(s => 
+                    \`<option value="\${s.id}">${s.name}</option>\`
+                ).join('');
+                
+                // 数据回显绑定：优先匹配 category_id
+                if (article.category_id) {
+                    catSelect.value = article.category_id;
+                } else {
+                    const matchedCat = Object.values(CATEGORIES.subs).flat().find(s => s.name === article.cat_name);
+                    if (matchedCat) catSelect.value = matchedCat.id;
+                }
 
                 const canEdit = article.status === 'draft' || article.status === 'rejected' || article.status === 'approved';
                 const canDelete = article.status === 'draft' || article.status === 'rejected';
+                
                 document.getElementById('my-article-title-input').disabled = !canEdit;
                 document.getElementById('my-article-content').disabled = !canEdit;
                 document.getElementById('my-article-tags').disabled = !canEdit;
+                catSelect.disabled = !canEdit; // 控制分类是否可改
+                
                 document.getElementById('my-article-btn-save').style.display = canEdit ? '' : 'none';
                 document.getElementById('my-article-btn-submit').style.display = canEdit ? '' : 'none';
                 document.getElementById('my-article-btn-delete').style.display = canDelete ? '' : 'none';
@@ -1102,13 +1124,16 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const title = document.getElementById('my-article-title-input').value.trim();
             const content = document.getElementById('my-article-content').value;
             const tags = document.getElementById('my-article-tags').value;
+            const category_id = document.getElementById('my-article-cat-select').value; // 新增提取 category_id
+
             if (!title || !content) { showToast('标题和内容不能为空', 'warn'); return; }
 
             try {
                 const res = await fetch('/api/articles/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ article_id: myArticleId, title, content, tags, action })
+                    // 挂载 category_id 到 payload
+                    body: JSON.stringify({ article_id: myArticleId, title, content, tags, category_id, action })
                 });
                 const data = await res.json();
                 if (data.success) {
