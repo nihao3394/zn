@@ -1,0 +1,8 @@
+name = "zn"
+compatibility_date = "2025-07-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "ARTICLE_DB"
+database_name = "article_db"
+database_id = "d2ad234f-804a-491d-b4c9-8643eaab132c"

@@ -89,7 +89,7 @@ async function handleUpdateRole(request, env) {
             return Response.json({ success: false, msg: "元用户身份不可修改" }, { status: 403 });
         }
 
-        const validRoles = ["admin", "keyword_reviewer", "member"];
+        const validRoles = ["admin", "keyword_reviewer", "article_reviewer", "member"];
         if (!validRoles.includes(role)) {
             return Response.json({ success: false, msg: "无效的角色类型" }, { status: 400 });
         }

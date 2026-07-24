@@ -331,6 +331,31 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
         }
+
+        /* 文章编辑器容器 */
+        .editor-wrapper { max-width: 900px; margin: 0 auto; }
+        .editor-wrapper .form-group { margin-bottom: 14px; }
+        .editor-wrapper .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
+        .editor-wrapper input.form-control { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
+        .editor-wrapper input.form-control:focus { border-color: var(--primary); }
+
+        /* 分类选择按钮组 */
+        .cat-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cat-btn {
+            padding: 6px 14px; border: 1px solid var(--border-color); border-radius: 16px;
+            background: #fff; color: #888; font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .cat-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .cat-btn.sub-selected { background: #e8f5e9; color: var(--primary); border-color: var(--primary-light); }
+
+        /* 标签小方块 */
+        .tag-input-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #e8f5e9; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .tag-chip .tag-remove { cursor: pointer; font-weight: bold; color: #c62828; }
+
+        /* Vditor 容器 */
+        #vditor-container { min-height: 400px; border: 1px solid var(--border-color); border-radius: 6px; }
+
     </style>
 </head>
 <body>
@@ -345,6 +370,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             <div class="brand">🌱 平台控制中心</div>
             <ul class="nav-list">
                 <li class="nav-item active" onclick="switchTab('wiki')">🌐 维基百科</li>
+                <li class="nav-item" onclick="switchTab('article-editor')">✏️ 文章撰写</li>
                 <li class="nav-item role-admin-only" onclick="switchTab('user-audit')">📝 注册审核 <span id="user-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-reviewer-only" onclick="switchTab('keyword-audit')">🔍 词条审核 <span id="kw-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item" onclick="switchTab('keyword-approved')">✅ 过审词条</li>
@@ -391,6 +417,54 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                         <button class="btn btn-secondary" onclick="closeDrawer()">取消</button>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- 1.5. 文章编辑器面板 -->
+        <section id="panel-article-editor" class="view-panel">
+            <div class="editor-wrapper">
+                <div class="form-group">
+                    <label>文章标题</label>
+                    <input type="text" id="article-title" class="form-control" placeholder="请输入文章标题">
+                </div>
+
+                <div class="form-group">
+                    <label>文章大类</label>
+                    <div class="cat-btn-group" id="cat-parent-group">
+                        <button class="cat-btn" data-id="" onclick="selectParentCat(this)">知识区</button>
+                        <button class="cat-btn" data-id="" onclick="selectParentCat(this)">政策解读</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="subcat-group" style="display:none;">
+                    <label>文章子类</label>
+                    <div class="cat-btn-group" id="cat-sub-group"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>自定义标签（输入后回车添加）</label>
+                    <div class="tag-input-row" id="tag-row">
+                        <input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>文章正文（Markdown）</label>
+                    <div id="vditor-container"></div>
+                </div>
+
+                <div class="btn-group" style="margin-top:16px;">
+                    <button class="btn btn-primary" onclick="saveArticle('draft')">💾 保存草稿</button>
+                    <button class="btn btn-primary" style="background:#e6a817;" onclick="saveArticle('submit')">📤 提交审核</button>
+                </div>
+                <div id="editor-msg" style="margin-top:8px;font-size:13px;"></div>
+            </div>
+        </section>
+
+        <!-- 1.6. 文章审核面板 -->
+        <section id="panel-article-audit" class="view-panel">
+            <div id="article-audit-list">
+                <p style="text-align:center;color:#999;">文章审核功能即将上线</p>
             </div>
         </section>
 
@@ -597,6 +671,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         window.addEventListener('DOMContentLoaded', () => {
             applyRolePermissions();
+            // 初始化分类按钮的 data-id
+            document.querySelectorAll('#cat-parent-group .cat-btn').forEach((btn, i) => {
+                btn.setAttribute('data-id', CATEGORIES.parents[i]?.id || '');
+            });
             loadUserAuditList();
             loadKeywordAuditList();
             loadKeywordApprovedList();
@@ -616,6 +694,167 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const canReview = currentUser.role === 'admin' || currentUser.role === 'keyword_reviewer';
                 el.style.display = canReview ? '' : 'none';
             });
+            document.querySelectorAll('.role-article-reviewer-only').forEach(el => {
+                const canReview = currentUser.role === 'admin' || currentUser.role === 'article_reviewer';
+                el.style.display = canReview ? '' : 'none';
+            });
+        }
+
+        // ——— 文章分类数据 ———
+        const CATEGORIES = {
+            parents: [
+                { id: 1, name: '知识区', slug: 'knowledge' },
+                { id: 2, name: '政策解读', slug: 'policy' }
+            ],
+            subs: {
+                1: [
+                    { id: 3, name: '现代农业种植技术', slug: 'modern-farming' },
+                    { id: 4, name: '病虫害绿色防治指南', slug: 'pest-control' },
+                    { id: 5, name: '农产品电商运营', slug: 'ecommerce' },
+                    { id: 6, name: '乡村旅游与文创开发', slug: 'rural-tourism' }
+                ],
+                2: [
+                    { id: 7, name: '近年惠农政策解读', slug: 'recent-policies' }
+                ]
+            }
+        };
+
+        let selectedParentId = null;
+        let selectedSubId = null;
+        let articleTags = [];
+
+        // ——— 分类按钮交互 ———
+        function selectParentCat(btn) {
+            document.querySelectorAll('#cat-parent-group .cat-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedParentId = parseInt(btn.getAttribute('data-id'));
+            selectedSubId = null;
+
+            const subGroup = document.getElementById('subcat-group');
+            const subBtns = document.getElementById('cat-sub-group');
+            const subs = CATEGORIES.subs[selectedParentId] || [];
+            subBtns.innerHTML = subs.map(s =>
+                \`<button class="cat-btn" data-id="\${s.id}" onclick="selectSubCat(this)">\${s.name}</button>\`
+            ).join('');
+            subGroup.style.display = 'block';
+        }
+
+        function selectSubCat(btn) {
+            document.querySelectorAll('#cat-sub-group .cat-btn').forEach(b => b.classList.remove('sub-selected'));
+            btn.classList.add('sub-selected');
+            selectedSubId = parseInt(btn.getAttribute('data-id'));
+        }
+
+        // ——— 标签管理 ———
+        function addTag() {
+            const input = document.getElementById('tag-input');
+            const tag = input.value.trim();
+            if (!tag || articleTags.includes(tag)) { input.value = ''; return; }
+            articleTags.push(tag);
+            renderTags();
+            input.value = '';
+        }
+
+        function removeTag(tag) {
+            articleTags = articleTags.filter(t => t !== tag);
+            renderTags();
+        }
+
+        function renderTags() {
+            const row = document.getElementById('tag-row');
+            row.innerHTML = articleTags.map(t =>
+                \`<span class="tag-chip">\${t}<span class="tag-remove" onclick="removeTag('\${t}')">×</span></span>\`
+            ).join('') +
+                '<input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addTag();}">';
+        }
+
+        // ——— Vditor 初始化 ———
+        function initVditor() {
+            // 动态加载 Vditor
+            if (!document.getElementById('vditor-css')) {
+                const css = document.createElement('link');
+                css.id = 'vditor-css';
+                css.rel = 'stylesheet';
+                css.href = 'https://cdn.jsdelivr.net/npm/vditor@3.10.6/dist/index.css';
+                document.head.appendChild(css);
+            }
+
+            const loadScript = (src) => new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src; s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+
+            (async () => {
+                if (!window.Vditor) await loadScript('https://cdn.jsdelivr.net/npm/vditor@3.10.6/dist/index.min.js');
+
+                window.vditorInstance = new Vditor('vditor-container', {
+                    height: 450,
+                    mode: 'ir',           // 即时渲染模式
+                    placeholder: '在此编写 Markdown 正文...',
+                    toolbar: [
+                        'headings', 'bold', 'italic', 'strike', '|',
+                        'list', 'ordered-list', 'check', '|',
+                        'quote', 'code', 'inline-code', '|',
+                        'upload', 'link', 'table', '|',
+                        'undo', 'redo', '|',
+                        'preview', 'fullscreen'
+                    ],
+                    cache: { enable: false },
+                    after: () => {}
+                });
+            })();
+        }
+
+        // ——— 保存文章 ———
+        async function saveArticle(action) {
+            const title = document.getElementById('article-title').value.trim();
+            if (!title) { showToast('请输入文章标题', 'warn'); return; }
+
+            if (!selectedParentId || !selectedSubId) {
+                showToast('请选择文章大类与子类', 'warn'); return;
+            }
+
+            const content = window.vditorInstance ? window.vditorInstance.getValue() : '';
+            if (!content) { showToast('请输入文章正文', 'warn'); return; }
+
+            const msgBox = document.getElementById('editor-msg');
+            msgBox.style.color = '#666';
+            msgBox.innerText = action === 'draft' ? '正在保存草稿...' : '正在提交审核...';
+
+            try {
+                const res = await fetch('/api/articles/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title, content,
+                        category_id: selectedSubId,
+                        tags: articleTags,
+                        action
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msgBox.style.color = 'green';
+                    msgBox.innerText = data.msg;
+                    showToast(data.msg, 'success');
+                    if (action === 'submit') {
+                        // 清空表单
+                        document.getElementById('article-title').value = '';
+                        window.vditorInstance.setValue('');
+                        selectedParentId = null; selectedSubId = null;
+                        articleTags = []; renderTags();
+                        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected', 'sub-selected'));
+                        document.getElementById('subcat-group').style.display = 'none';
+                    }
+                } else {
+                    msgBox.style.color = 'red';
+                    msgBox.innerText = data.msg;
+                }
+            } catch (e) {
+                msgBox.style.color = 'red';
+                msgBox.innerText = '网络异常: ' + (e.message || e);
+            }
         }
 
         // Tab 切换逻辑
@@ -628,13 +867,26 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             
             const titles = {
                 'wiki': '维基百科镜像',
+                'article-editor': '文章撰写',
                 'user-audit': '用户注册申请审核',
+                'article-audit': '文章审核',
                 'keyword-audit': '待审核词条管理',
                 'keyword-approved': '已通过词条列表',
                 'members': '全体成员列表',
                 'settings': '个人控制台设置'
             };
             document.getElementById('panel-title').innerText = titles[tabKey] || '控制台';
+
+            // 进入文章编辑器时初始化 Vditor，离开时销毁
+            if (tabKey === 'article-editor') {
+                if (!window.vditorInstance) initVditor();
+            } else {
+                if (window.vditorInstance) {
+                    window.vditorInstance.destroy();
+                    window.vditorInstance = null;
+                }
+            }
+
             currentTab = tabKey;
 
             // 移动端：点击导航项后自动收起侧边栏
