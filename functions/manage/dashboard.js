@@ -298,6 +298,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 min-width: 260px;
                 max-width: 80vw;
                 height: 100vh;
+                overflow-y: auto;
                 z-index: 150;
                 transition: left 0.3s ease;
                 box-shadow: 4px 0 20px rgba(0,0,0,0.2);
@@ -330,6 +331,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
+            .wiki-trigger-zone { width: 32px; background: rgba(46,125,50,0.08); border-radius: 6px 0 0 6px; }
 
             .horizontal-card { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; }
         }
@@ -981,6 +983,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     document.getElementById('preview-body').innerHTML = marked.parse(a.content || '');
                     const tagsDiv = document.getElementById('preview-tags');
                     tagsDiv.innerHTML = (a.tags || []).map(t => \`<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:12px;">#\${t}</span>\`).join('');
+                    document.getElementById('preview-btn-approve').style.display = '';
+                    document.getElementById('preview-btn-reject').style.display = '';
                     document.getElementById('preview-btn-approve').onclick = () => reviewArticle(articleId, 'approve');
                     document.getElementById('preview-btn-reject').onclick = () => reviewArticle(articleId, 'reject');
                     openModal('modal-article-preview');
