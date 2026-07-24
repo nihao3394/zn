@@ -971,14 +971,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             };
             document.getElementById('panel-title').innerText = titles[tabKey] || '控制台';
 
-            // 进入文章编辑器时初始化 Vditor，离开时销毁
+            // 进入文章编辑器时初始化 Vditor（离开时不销毁，保留内容）
             if (tabKey === 'article-editor') {
                 if (!window.vditorInstance) initVditor();
-            } else {
-                if (window.vditorInstance) {
-                    window.vditorInstance.destroy();
-                    window.vditorInstance = null;
-                }
             }
 
             currentTab = tabKey;
