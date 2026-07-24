@@ -464,6 +464,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="btn-group" style="margin-top:16px;">
                     <button class="btn btn-primary" onclick="saveArticle('draft')">💾 保存草稿</button>
                     <button class="btn btn-primary" style="background:#e6a817;" onclick="saveArticle('submit')">📤 提交审核</button>
+                    <button class="btn btn-secondary" id="btn-new-article" style="display:none;" onclick="newArticle()">🆕 创建新文章</button>
                 </div>
                 <div id="editor-msg" style="margin-top:8px;font-size:13px;"></div>
             </div>
@@ -791,6 +792,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         let selectedParentId = null;
         let selectedSubId = null;
         let articleTags = [];
+        let currentArticleId = null;   // 当前正在编辑的文章ID，null=新文章
 
         // ——— 分类按钮交互 ———
         function selectParentCat(btn) {
@@ -889,55 +891,76 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             })();
         }
 
-        // ——— 保存文章 ———
+        // ——— 自动 localStorage 保存 ———
+        function autoSaveDraft() {
+            const title = document.getElementById('article-title').value;
+            const content = window.vditorInstance ? window.vditorInstance.getValue() : '';
+            if (title || content || selectedParentId || articleTags.length > 0) {
+                localStorage.setItem('zn_draft', JSON.stringify({
+                    title, content,
+                    parentId: selectedParentId, subId: selectedSubId,
+                    tags: articleTags, articleId: currentArticleId
+                }));
+                document.getElementById('btn-new-article').style.display = '';
+            }
+        }
+
+        // Vditor 内容变化时自动保存到 localStorage
+        setInterval(() => {
+            if (window.vditorInstance) autoSaveDraft();
+        }, 3000);
+
+        // ——— 保存/提交文章 ———
         async function saveArticle(action) {
             const title = document.getElementById('article-title').value.trim();
             if (!title) { showToast('请输入文章标题', 'warn'); return; }
-
-            if (!selectedParentId || !selectedSubId) {
-                showToast('请选择文章大类与子类', 'warn'); return;
-            }
-
+            if (!selectedParentId || !selectedSubId) { showToast('请选择文章大类与子类', 'warn'); return; }
             const content = window.vditorInstance ? window.vditorInstance.getValue() : '';
             if (!content) { showToast('请输入文章正文', 'warn'); return; }
 
             const msgBox = document.getElementById('editor-msg');
             msgBox.style.color = '#666';
-            msgBox.innerText = action === 'draft' ? '正在保存草稿...' : '正在提交审核...';
+            msgBox.innerText = action === 'draft' ? '正在保存...' : '正在提交审核...';
+
+            const payload = { title, content, category_id: selectedSubId, tags: articleTags.join(","), action };
+            const isUpdate = currentArticleId && action !== 'submit';
 
             try {
-                const res = await fetch('/api/articles/submit', {
+                const url = isUpdate ? '/api/articles/update' : '/api/articles/submit';
+                if (isUpdate) payload.article_id = currentArticleId;
+
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title, content,
-                        category_id: selectedSubId,
-                        tags: articleTags.join(","),
-                        action
-                    })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (data.success) {
-                    msgBox.style.color = 'green';
-                    msgBox.innerText = data.msg;
+                    if (!isUpdate) currentArticleId = data.article_id;
+                    msgBox.style.color = 'green'; msgBox.innerText = data.msg;
                     showToast(data.msg, 'success');
                     localStorage.removeItem('zn_draft');
-                    if (action === 'submit') {
-                        // 清空表单
-                        document.getElementById('article-title').value = '';
-                        window.vditorInstance.setValue('');
-                        selectedParentId = null; selectedSubId = null;
-                        articleTags = []; renderTags();
-                        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected', 'sub-selected'));
-                        document.getElementById('subcat-group').style.display = 'none';
-                    }
-                } else {
-                    msgBox.style.color = 'red';
-                    msgBox.innerText = data.msg;
-                }
-            } catch (e) {
-                msgBox.style.color = 'red';
-                msgBox.innerText = '网络异常: ' + (e.message || e);
+                    if (action === 'submit') clearEditor();
+                } else { msgBox.style.color = 'red'; msgBox.innerText = data.msg; }
+            } catch (e) { msgBox.style.color = 'red'; msgBox.innerText = '网络异常: ' + (e.message || e); }
+        }
+
+        function clearEditor() {
+            document.getElementById('article-title').value = '';
+            if (window.vditorInstance) window.vditorInstance.setValue('');
+            selectedParentId = null; selectedSubId = null; currentArticleId = null;
+            articleTags = []; renderTags();
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected', 'sub-selected'));
+            document.getElementById('subcat-group').style.display = 'none';
+            document.getElementById('btn-new-article').style.display = 'none';
+            document.getElementById('editor-msg').innerText = '';
+        }
+
+        function newArticle() {
+            if (currentArticleId) {
+                saveArticle('draft').then(() => clearEditor());
+            } else {
+                clearEditor();
             }
         }
 
@@ -1060,6 +1083,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 document.getElementById('my-article-tags').value = (article.tags || []).join(',');
                 document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
                 document.getElementById('my-article-cat').innerText = article.cat_name || '-';
+                document.getElementById('my-article-tags').value = (article.tags || []).join(',');
 
                 const canEdit = article.status === 'draft' || article.status === 'rejected' || article.status === 'approved';
                 const canDelete = article.status === 'draft' || article.status === 'rejected';

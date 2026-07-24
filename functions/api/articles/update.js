@@ -10,7 +10,7 @@ export async function onRequestPost(context) {
         const sess = JSON.parse(sessRaw);
         const username = sess.user;
 
-        const { article_id, title, content, tags, action } = await request.json();
+        const { article_id, title, content, tags, action, category_id } = await request.json();
         if (!article_id) return Response.json({ success: false, msg: "缺少文章ID" }, { status: 400 });
 
         const db = env.ARTICLE_DB;
@@ -21,8 +21,8 @@ export async function onRequestPost(context) {
         const newStatus = action === "submit" ? "pending" : article.status;
 
         await db.prepare(
-            "UPDATE articles SET title = ?, content = ?, status = ?, updated_at = ? WHERE id = ?"
-        ).bind(title || article.title, content || article.content, newStatus, now, article_id).run();
+            "UPDATE articles SET title = ?, content = ?, status = ?, category_id = ?, updated_at = ? WHERE id = ?"
+        ).bind(title || article.title, content || article.content, newStatus, category_id || article.category_id, now, article_id).run();
 
         if (tags !== undefined) {
             await db.prepare("DELETE FROM article_tags WHERE article_id = ?").bind(article_id).run();
