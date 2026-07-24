@@ -1098,12 +1098,13 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const data = await res.json();
                 if (data.success && data.list && data.list.length > 0) {
                     container.innerHTML = data.list.map(a => \`
-                        <div class="horizontal-card" style="flex-wrap:wrap;gap:12px 24px;" onclick="previewApprovedArticle('\${a.id}')">
-                            <span style="font-weight:600;font-size:15px;color:var(--text-main);flex:1;min-width:180px;">\${a.title}</span>
-                            <span style="font-size:13px;color:var(--text-muted);">作者：\${a.author}</span>
-                            <span style="font-size:13px;color:var(--text-muted);">审核：\${a.reviewer || '-'}</span>
-                            <span style="font-size:13px;color:var(--text-muted);">分类：\${a.cat_name || '-'}</span>
-                            <span style="font-size:12px;color:#aaa;">\${new Date(a.created_at).toLocaleDateString()}</span>
+                        <div class="horizontal-card" onclick="previewApprovedArticle('\${a.id}')" style="padding:16px 20px;">
+                            <div style="font-weight:700;font-size:15px;color:#1b5e20;margin-bottom:6px;">\${a.title}</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--text-muted);">
+                                <span>作者：\${a.author}</span><span>|</span><span>审核：\${a.reviewer || '-'}</span>
+                                <span>|</span><span>分类：\${a.cat_name || '-'}</span>
+                            </div>
+                            <div style="font-size:12px;color:#aaa;margin-top:4px;">发布于 \${a.created_at.substring(0,10).replace(/-/g,'/')}</div>
                         </div>
                     \`).join('');
                 } else {

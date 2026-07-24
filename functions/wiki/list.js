@@ -27,7 +27,7 @@ export async function onRequest(context) {
                 <a href="/wiki/article/?slug=${a.slug}" class="card-link">
                     <div class="card">
                         <h3>${a.title}</h3>
-                        <p>作者：${a.author} | 发布于：${new Date(a.created_at).toLocaleDateString()}</p>
+                        <p>作者：${a.author} | ${a.created_at.substring(0,10).replace(/-/g,'/')}</p>
                     </div>
                 </a>
             `).join('')
@@ -54,7 +54,7 @@ export async function onRequest(context) {
         .nav-links a:hover, .nav-links a.active { background: linear-gradient(135deg, #a5d6a7, #81c784); color: #1b5e20; }
 
         /* 主体双栏布局 */
-        .layout-wrapper { display: flex; max-width: 1200px; margin: 40px auto; gap: 36px; padding: 0 5%; min-height: 70vh; }
+        .layout-wrapper { display: flex; max-width: 1200px; margin: 40px auto; gap: 36px; padding: 0 5% 0 0; min-height: 70vh; margin-left: 0; }
         
         /* 左侧边栏 - 桌面端 */
         .sidebar { width: 260px; flex-shrink: 0; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 20px 0; height: fit-content; position: sticky; top: 90px; }
@@ -194,15 +194,15 @@ export async function onRequest(context) {
 
         menuToggle.addEventListener('click', toggleMenu);
         overlay.addEventListener('click', toggleMenu);
-
-        function setView(mode) {
-            const grid = document.querySelector('.grid');
-            grid.className = 'grid ' + mode;
-            if (mode === 'grid') grid.classList.add('grid-mode');
-            document.getElementById('btn-list').classList.toggle('active', mode === 'list');
-            document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
-        }
     });
+
+    function setView(mode) {
+        const grid = document.querySelector('.grid');
+        grid.className = 'grid ' + mode;
+        if (mode === 'grid') grid.classList.add('grid-mode');
+        document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+        document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
+    }
 </script>
 </body>
 </html>`;
