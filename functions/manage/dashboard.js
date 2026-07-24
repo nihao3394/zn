@@ -906,12 +906,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             } catch(e) { showToast('操作失败'); }
         }
 
-        function selectSubCat(btn) {
-            document.querySelectorAll('#cat-sub-group .cat-btn').forEach(b => b.classList.remove('sub-selected'));
-            btn.classList.add('sub-selected');
-            selectedSubId = parseInt(btn.getAttribute('data-id'));
-        }
-
         // ——— 标签管理 ———
         function addTag() {
             if (articleTags.length >= 20) { showToast('最多添加20个标签', 'warn'); input.value = ''; return; }
