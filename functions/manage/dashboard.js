@@ -330,6 +330,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
+
+            .horizontal-card { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; }
         }
 
         /* 文章编辑器容器 */
@@ -1086,6 +1088,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             } catch (e) { showToast('操作失败'); }
         }
 
+        let approvedArticleContent = '';
+
         async function loadArticleApprovedList() {
             const container = document.getElementById('article-approved-list');
             container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
@@ -1094,22 +1098,36 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const data = await res.json();
                 if (data.success && data.list && data.list.length > 0) {
                     container.innerHTML = data.list.map(a => \`
-                        <div class="horizontal-card">
-                            <div class="card-meta">
-                                <span class="card-title">\${a.title}</span>
-                                <span class="card-sub">作者：\${a.author}</span>
-                                <span class="card-sub">审核员：\${a.reviewer || '-'}</span>
-                                <span class="card-sub">分类：\${a.cat_name || '-'}</span>
-                            </div>
-                            <span class="card-sub">\${new Date(a.created_at).toLocaleDateString()}</span>
+                        <div class="horizontal-card" style="flex-wrap:wrap;" onclick="previewApprovedArticle('\${a.id}')">
+                            <div style="width:100%;font-weight:600;font-size:15px;color:var(--text-main);margin-bottom:4px;">\${a.title}</div>
+                            <div style="width:100%;font-size:13px;color:var(--text-muted);margin-bottom:2px;">作者：\${a.author} | 审核员：\${a.reviewer || '-'}</div>
+                            <div style="width:100%;font-size:13px;color:var(--text-muted);margin-bottom:2px;">分类：\${a.cat_name || '-'}</div>
+                            <div style="width:100%;font-size:12px;color:#aaa;">\${new Date(a.created_at).toLocaleDateString()}</div>
                         </div>
                     \`).join('');
                 } else {
                     container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
                 }
-            } catch (e) {
-                container.innerHTML = '<p style="color:red;">加载失败</p>';
-            }
+            } catch (e) { container.innerHTML = '<p style="color:red;">加载失败</p>'; }
+        }
+
+        async function previewApprovedArticle(articleId) {
+            try {
+                const res = await fetch('/api/articles/detail?id=' + articleId, { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success) {
+                    const a = data.article;
+                    document.getElementById('preview-title').innerText = a.title;
+                    document.getElementById('preview-author').innerText = a.author;
+                    document.getElementById('preview-cat').innerText = a.cat_name || '-';
+                    document.getElementById('preview-body').innerHTML = marked.parse(a.content || '');
+                    const tagsDiv = document.getElementById('preview-tags');
+                    tagsDiv.innerHTML = (a.tags || []).map(t => \`<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:12px;">#\${t}</span>\`).join('');
+                    document.getElementById('preview-btn-approve').style.display = 'none';
+                    document.getElementById('preview-btn-reject').style.display = 'none';
+                    openModal('modal-article-preview');
+                }
+            } catch (e) { showToast('加载失败'); }
         }
 
         // Tab 切换逻辑
