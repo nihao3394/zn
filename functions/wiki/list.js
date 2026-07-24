@@ -43,7 +43,7 @@ export async function onRequest(context) {
     <style>
         /* 基础样式与色彩继承自 index.html[cite: 1] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; background: #f9f9f9; line-height: 1.6; }
+        body { display: flex; flex-direction: column; min-height: 100vh; font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; background: #f9f9f9; line-height: 1.6; }
         
         /* 顶部导航条 */
         header { background: #2e7d32; color: #fff; padding: 15px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -84,7 +84,7 @@ export async function onRequest(context) {
         /* 空状态提示 */
         .empty-state { text-align: center; color: #666; padding: 60px 0; background: #fff; border-radius: 8px; grid-column: 1 / -1; border: 1px dashed #ccc; font-size: 1.1rem; }
 
-        footer { background: #1b5e20; color: #fff; text-align: center; padding: 20px 0; margin-top: 40px; font-size: .9rem; }
+        footer { margin-top: auto; background: #1b5e20; color: #fff; text-align: center; padding: 20px 0; margin-top: 40px; font-size: .9rem; }
         
         /* 移动端遮罩层 */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; }
