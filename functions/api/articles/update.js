@@ -18,7 +18,8 @@ export async function onRequestPost(context) {
         if (!article) return Response.json({ success: false, msg: "文章不存在或无权修改" }, { status: 404 });
 
         const now = new Date().toISOString();
-        const newStatus = action === "submit" ? "pending" : article.status;
+        // submit 时强制回到 pending；其他情况保持不变
+        const newStatus = action === "submit" ? "pending" : (article.status === "approved" ? "pending" : article.status);
 
         await db.prepare(
             "UPDATE articles SET title = ?, content = ?, status = ?, updated_at = ? WHERE id = ?"

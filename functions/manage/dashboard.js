@@ -411,7 +411,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <h4>提交新词条词条申请</h4>
                     <div class="form-group">
                         <label>您要提交的关键词：</label>
-                        <input type="text" id="kw-input" class="form-control" placeholder="例如：农业物联网">
+                        <input type="text" id="kw-input" class="form-control" placeholder="请您提交前确认该词条在维基百科中真实存在">
                     </div>
                     <div class="form-group">
                         <label>请简述该词条用途：</label>
@@ -624,6 +624,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             <div class="btn-group" style="justify-content:flex-end;">
                 <button class="btn btn-primary" id="my-article-btn-save" onclick="updateMyArticle('draft')">💾 保存</button>
                 <button class="btn btn-primary" style="background:#e6a817;" id="my-article-btn-submit" onclick="updateMyArticle('submit')">📤 提交审核</button>
+                <button class="btn btn-danger" id="my-article-btn-delete" style="display:none;" onclick="deleteMyArticle()">🗑 删除</button>
                 <button class="btn btn-secondary" onclick="closeModal('modal-my-article')">关闭</button>
             </div>
         </div>
@@ -1056,12 +1057,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
                 document.getElementById('my-article-cat').innerText = article.cat_name || '-';
 
-                const canEdit = article.status === 'draft' || article.status === 'rejected';
+                const canEdit = article.status === 'draft' || article.status === 'rejected' || article.status === 'approved';
+                const canDelete = article.status === 'draft' || article.status === 'rejected';
                 document.getElementById('my-article-title-input').disabled = !canEdit;
                 document.getElementById('my-article-content').disabled = !canEdit;
                 document.getElementById('my-article-tags').disabled = !canEdit;
                 document.getElementById('my-article-btn-save').style.display = canEdit ? '' : 'none';
                 document.getElementById('my-article-btn-submit').style.display = canEdit ? '' : 'none';
+                document.getElementById('my-article-btn-delete').style.display = canDelete ? '' : 'none';
 
                 openModal('modal-my-article');
             } catch (e) { showToast('加载失败'); }
@@ -1088,51 +1091,68 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             } catch (e) { showToast('操作失败'); }
         }
 
+        async function deleteMyArticle() {
+            if (!confirm('确定要删除这篇文章吗？此操作不可恢复。')) return;
+            try {
+                const res = await fetch('/api/articles/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article_id: myArticleId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('文章已删除', 'success');
+                    closeModal('modal-my-article');
+                    loadMyArticles();
+                } else { showToast(data.msg || '删除失败'); }
+            } catch (e) { showToast('操作失败'); }
+        }
+
         let approvedArticleContent = '';
 
-async function loadArticleApprovedList() {
-    const container = document.getElementById('article-approved-list');
-    container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
-    try {
-        const res = await fetch('/api/articles/approved-list', { cache: 'no-store' });
-        const data = await res.json();
-        if (data.success && data.list && data.list.length > 0) {
-            // 注入响应式样式
-            const style = \`
-                <style>
-                    .dash-card { display: flex; align-items: center; padding: 16px 20px; background: #fff; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border-left: 4px solid #2e7d32; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: transform 0.2s; }
-                    .dash-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-                    .dash-title { font-weight: 700; font-size: 15px; color: #1b5e20; width: 220px; flex-shrink: 0; padding-right: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                    .dash-meta { display: flex; flex: 1; gap: 16px; font-size: 13px; color: #666; }
-                    .dash-divider { color: #ddd; }
-                    .dash-date { font-size: 12px; color: #aaa; margin-left: 16px; flex-shrink: 0; }
+        async function loadArticleApprovedList() {
+            const container = document.getElementById('article-approved-list');
+            container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/articles/approved-list', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success && data.list && data.list.length > 0) {
+                    // 注入响应式样式
+                    const style = \`
+                        <style>
+                            .dash-card { display: flex; align-items: center; padding: 16px 20px; background: #fff; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border-left: 4px solid #2e7d32; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: transform 0.2s; }
+                            .dash-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+                            .dash-title { font-weight: 700; font-size: 15px; color: #1b5e20; width: 220px; flex-shrink: 0; padding-right: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                            .dash-meta { display: flex; flex: 1; gap: 16px; font-size: 13px; color: #666; }
+                            .dash-divider { color: #ddd; }
+                            .dash-date { font-size: 12px; color: #aaa; margin-left: 16px; flex-shrink: 0; }
                     
-                    /* 移动端自动断行并隐藏分隔符 */
-                    @media(max-width: 768px) {
-                        .dash-card { flex-direction: column; align-items: flex-start; gap: 8px; }
-                        .dash-title { width: 100%; white-space: normal; padding-right: 0; }
-                        .dash-meta { flex-direction: column; gap: 6px; }
-                        .dash-divider { display: none; }
-                        .dash-date { margin-left: 0; margin-top: 4px; }
-                    }
-                </style>
-            \`;
-            container.innerHTML = style + data.list.map(a => \`
-                <div class="dash-card" onclick="previewApprovedArticle('\${a.id}')">
-                    <div class="dash-title">\${a.title}</div>
-                    <div class="dash-meta">
-                        <span>作者：\${a.author}</span><span class="dash-divider">|</span>
-                        <span>审核：\${a.reviewer || '-'}</span><span class="dash-divider">|</span>
-                        <span>分类：\${a.cat_name || '-'}</span>
-                    </div>
-                    <div class="dash-date">发布于 \${a.created_at.substring(0,10).replace(/-/g,'/')}</div>
-                </div>
-            \`).join('');
-        } else {
-            container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
+                            /* 移动端自动断行并隐藏分隔符 */
+                            @media(max-width: 768px) {
+                                .dash-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+                                .dash-title { width: 100%; white-space: normal; padding-right: 0; }
+                                .dash-meta { flex-direction: column; gap: 6px; }
+                                .dash-divider { display: none; }
+                                .dash-date { margin-left: 0; margin-top: 4px; }
+                            }
+                        </style>
+                    \`;
+                    container.innerHTML = style + data.list.map(a => \`
+                        <div class="dash-card" onclick="previewApprovedArticle('\${a.id}')">
+                            <div class="dash-title">\${a.title}</div>
+                            <div class="dash-meta">
+                                <span>作者：\${a.author}</span><span class="dash-divider">|</span>
+                                <span>审核：\${a.reviewer || '-'}</span><span class="dash-divider">|</span>
+                                <span>分类：\${a.cat_name || '-'}</span>
+                            </div>
+                            <div class="dash-date">发布于 \${a.created_at.substring(0,10).replace(/-/g,'/')}</div>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
+                }
+            } catch (e) { container.innerHTML = '<p style="color:red;">加载失败</p>'; }
         }
-    } catch (e) { container.innerHTML = '<p style="color:red;">加载失败</p>'; }
-}
 
         async function previewApprovedArticle(articleId) {
             try {
