@@ -352,6 +352,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .cat-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
         .cat-btn.sub-selected { background: #e8f5e9; color: var(--primary); border-color: var(--primary-light); }
 
+        .cat-add-btn { background: none; border: 2px dashed #ccc; color: #aaa; font-size: 18px; padding: 4px 12px; min-width: 36px; }
+        .cat-add-btn:hover { border-color: var(--primary); color: var(--primary); }
+        
         /* 标签小方块 */
         .tag-input-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
         .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #e8f5e9; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
@@ -413,7 +416,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <h4>提交新词条词条申请</h4>
                     <div class="form-group">
                         <label>您要提交的关键词：</label>
-                        <input type="text" id="kw-input" class="form-control" placeholder="请您提交前确认该词条在维基百科中真实存在">
+                        <input type="text" id="kw-input" class="form-control" placeholder="请您提交前确认该词条真实存在">
                     </div>
                     <div class="form-group">
                         <label>请简述该词条用途：</label>
@@ -439,14 +442,15 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="form-group">
                     <label>文章大类</label>
                     <div class="cat-btn-group" id="cat-parent-group">
-                        <button class="cat-btn" data-id="" onclick="selectParentCat(this)">知识区</button>
-                        <button class="cat-btn" data-id="" onclick="selectParentCat(this)">政策解读</button>
+                        <button class="cat-btn cat-add-btn" onclick="openCategoryModal(null)">＋</button>
                     </div>
                 </div>
 
                 <div class="form-group" id="subcat-group" style="display:none;">
                     <label>文章子类</label>
-                    <div class="cat-btn-group" id="cat-sub-group"></div>
+                    <div class="cat-btn-group" id="cat-sub-group">
+                        <button class="cat-btn cat-add-btn" style="display:none;" id="btn-add-sub" onclick="openCategoryModal(selectedParentId)">＋</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -638,6 +642,34 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </div>
     </div>
 
+    <div id="modal-add-category" class="modal-overlay">
+        <div class="modal-card" style="max-width:480px;">
+            <h4 id="cat-modal-title" style="margin-bottom:14px;">创建新分类</h4>
+            <div class="form-group">
+                <label>分类名称</label>
+                <input type="text" id="cat-name-input" class="form-control" placeholder="如：智慧农业">
+            </div>
+            <div id="cat-extra-fields" style="display:none;">
+                <div class="form-group">
+                    <label>封面图片URL</label>
+                    <input type="text" id="cat-image-input" class="form-control" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>描述文字</label>
+                    <input type="text" id="cat-desc-input" class="form-control" placeholder="简要描述此分类的内容方向">
+                </div>
+                <div class="form-group">
+                    <label>默认标签</label>
+                    <input type="text" id="cat-tag-input" class="form-control" placeholder="如：种植技术">
+                </div>
+            </div>
+            <div class="btn-group" style="justify-content:flex-end;margin-top:12px;">
+                <button class="btn btn-primary" onclick="submitCategory()">创建</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-add-category')">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全局状态管理
         // 核心注入点：直接利用模板字符串的 \${} 语法，将传入的 userCtx 变量注入到 JS 中
@@ -743,10 +775,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         window.addEventListener('DOMContentLoaded', () => {
             applyRolePermissions();
-            // 初始化分类按钮的 data-id
-            document.querySelectorAll('#cat-parent-group .cat-btn').forEach((btn, i) => {
-                btn.setAttribute('data-id', CATEGORIES.parents[i]?.id || '');
-            });
+            loadCategories();
             loadUserAuditList();
             loadArticleAuditList();
             loadKeywordAuditList();
@@ -775,44 +804,96 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             });
         }
 
-        // ——— 文章分类数据 ———
-        const CATEGORIES = {
-            parents: [
-                { id: 1, name: '知识区', slug: 'knowledge' },
-                { id: 2, name: '政策解读', slug: 'policy' }
-            ],
-            subs: {
-                1: [
-                    { id: 3, name: '现代农业种植技术', slug: 'modern-farming' },
-                    { id: 4, name: '病虫害绿色防治指南', slug: 'pest-control' },
-                    { id: 5, name: '农产品电商运营', slug: 'ecommerce' },
-                    { id: 6, name: '乡村旅游与文创开发', slug: 'rural-tourism' }
-                ],
-                2: [
-                    { id: 7, name: '近年惠农政策解读', slug: 'recent-policies' }
-                ]
-            }
-        };
+        // ——— 文章分类数据（从 API 动态加载） ———
+        let CATEGORIES = { parents: [], subs: {} };
+        let catAddParentId = null;
 
-        let selectedParentId = null;
-        let selectedSubId = null;
-        let articleTags = [];
-        let currentArticleId = null;   // 当前正在编辑的文章ID，null=新文章
-
-        // ——— 分类按钮交互 ———
         function selectParentCat(btn) {
-            document.querySelectorAll('#cat-parent-group .cat-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
             selectedParentId = parseInt(btn.getAttribute('data-id'));
             selectedSubId = null;
+            renderParentButtons();
+            renderSubButtons(selectedParentId);
+        }
 
-            const subGroup = document.getElementById('subcat-group');
-            const subBtns = document.getElementById('cat-sub-group');
-            const subs = CATEGORIES.subs[selectedParentId] || [];
-            subBtns.innerHTML = subs.map(s =>
+        function selectSubCat(btn) {
+            document.querySelectorAll('#cat-sub-group .cat-btn').forEach(b => b.classList.remove('sub-selected'));
+            btn.classList.add('sub-selected');
+            selectedSubId = parseInt(btn.getAttribute('data-id'));
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/articles/categories', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success && data.list) {
+                    CATEGORIES.parents = data.list.filter(c => !c.parent_id);
+                    CATEGORIES.subs = {};
+                    data.list.forEach(c => {
+                        if (c.parent_id) {
+                            if (!CATEGORIES.subs[c.parent_id]) CATEGORIES.subs[c.parent_id] = [];
+                            CATEGORIES.subs[c.parent_id].push(c);
+                        }
+                    });
+                    renderParentButtons();
+                    if (selectedParentId) renderSubButtons(selectedParentId);
+                }
+            } catch(e) {}
+        }
+
+        function renderParentButtons() {
+            const group = document.getElementById('cat-parent-group');
+            group.innerHTML = CATEGORIES.parents.map(p =>
+                \`<button class="cat-btn" data-id="\${p.id}" onclick="selectParentCat(this)">\${p.name}</button>\`
+            ).join('') + '<button class="cat-btn cat-add-btn" onclick="openCategoryModal(null)">＋</button>';
+            if (selectedParentId) {
+                const btn = group.querySelector(\`[data-id="\${selectedParentId}"]\`);
+                if (btn) btn.classList.add('selected');
+            }
+        }
+
+        function renderSubButtons(parentId) {
+            const group = document.getElementById('cat-sub-group');
+            const subs = CATEGORIES.subs[parentId] || [];
+            group.innerHTML = subs.map(s =>
                 \`<button class="cat-btn" data-id="\${s.id}" onclick="selectSubCat(this)">\${s.name}</button>\`
-            ).join('');
-            subGroup.style.display = 'block';
+            ).join('') + '<button class="cat-btn cat-add-btn" id="btn-add-sub" onclick="openCategoryModal(' + parentId + ')">＋</button>';
+            document.getElementById('subcat-group').style.display = 'block';
+            if (selectedSubId) {
+                const btn = group.querySelector(\`[data-id="\${selectedSubId}"]\`);
+                if (btn) btn.classList.add('sub-selected');
+            }
+        }
+
+        function openCategoryModal(parentId) {
+            catAddParentId = parentId;
+            document.getElementById('cat-modal-title').innerText = parentId ? '创建新子类' : '创建新大类';
+            document.getElementById('cat-extra-fields').style.display = parentId ? '' : 'none';
+            document.getElementById('cat-name-input').value = '';
+            document.getElementById('cat-image-input').value = '';
+            document.getElementById('cat-desc-input').value = '';
+            document.getElementById('cat-tag-input').value = '';
+            openModal('modal-add-category');
+        }
+
+        async function submitCategory() {
+            const name = document.getElementById('cat-name-input').value.trim();
+            if (!name) { showToast('请输入分类名称', 'warn'); return; }
+            const payload = { name };
+            if (catAddParentId) {
+                payload.parent_id = catAddParentId;
+                payload.image_url = document.getElementById('cat-image-input').value.trim();
+                payload.description = document.getElementById('cat-desc-input').value.trim();
+                payload.tag = document.getElementById('cat-tag-input').value.trim();
+            }
+            try {
+                const res = await fetch('/api/articles/add-category', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) { showToast(data.msg, 'success'); closeModal('modal-add-category'); loadCategories(); }
+                else showToast(data.msg || '失败');
+            } catch(e) { showToast('操作失败'); }
         }
 
         function selectSubCat(btn) {

@@ -20,6 +20,12 @@ export async function onRequestPost(context) {
         const now = new Date().toISOString();
         const newStatus = action === "submit" ? "pending" : article.status;
 
+        // 自动继承子类标签
+        const catInfo = await db.prepare("SELECT tag FROM categories WHERE id = ?").bind(category_id).first();
+        if (catInfo && catInfo.tag) {
+            if (!normalizedTags.includes(catInfo.tag)) normalizedTags.push(catInfo.tag);
+        }
+
         await db.prepare(
             "UPDATE articles SET title = ?, content = ?, status = ?, category_id = ?, updated_at = ? WHERE id = ?"
         ).bind(title || article.title, content || article.content, newStatus, category_id || article.category_id, now, article_id).run();

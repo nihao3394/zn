@@ -59,6 +59,12 @@ export async function onRequestPost(context) {
         // 提前生成并固定文章 ID，避免二次查询
         const articleId = crypto.randomUUID();
 
+        // 自动继承子类标签
+        const catInfo = await db.prepare("SELECT tag FROM categories WHERE id = ?").bind(category_id).first();
+        if (catInfo && catInfo.tag) {
+            if (!normalizedTags.includes(catInfo.tag)) normalizedTags.push(catInfo.tag);
+        }
+
         // 写入文章
         await db.prepare(
             "INSERT INTO articles (id, title, content, author, category_id, status, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
