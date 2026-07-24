@@ -417,7 +417,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         <section id="panel-wiki" class="view-panel active" style="padding:0;">
             <div class="wiki-container">
                 <iframe id="wiki-frame" class="wiki-iframe" src="https://wiki.findingstar.top"></iframe>
-                <div class="wiki-trigger-zone"></div>
+                <!-- 添加 onclick 事件，点击时切换 open 和 active 状态 -->
+                <div class="wiki-trigger-zone" onclick="document.getElementById('wiki-drawer-panel').classList.toggle('open'); this.classList.toggle('active')"></div>
                 <!-- 侧边抽屉 -->
                 <div id="wiki-drawer-panel" class="wiki-drawer">
                     <h4>提交新词条词条申请</h4>
