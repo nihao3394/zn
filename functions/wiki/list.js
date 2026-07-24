@@ -10,7 +10,6 @@ export async function onRequest(context) {
         let articles = [];
         let catName = "全部文章";
 
-        // 从数据库拉取分类信息和文章列表[cite: 2]
         if (catSlug && db) {
             const cat = await db.prepare("SELECT id, name FROM categories WHERE slug = ?").bind(catSlug).first();
             if (cat) {
@@ -27,7 +26,7 @@ export async function onRequest(context) {
                 <a href="/wiki/article/?slug=${a.slug}" class="card-link">
                     <div class="card">
                         <h3>${a.title}</h3>
-                        <p>作者：${a.author} | ${a.created_at.substring(0,10).replace(/-/g,'/')}</p>
+                        <p class="meta-info">作者：${a.author} <span class="divider">|</span> ${a.created_at.substring(0,10).replace(/-/g,'/')}</p>
                     </div>
                 </a>
             `).join('')
@@ -41,22 +40,21 @@ export async function onRequest(context) {
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>${catName} - 助农知识库</title>
     <style>
-        /* 基础样式与色彩继承自 index.html[cite: 1] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { display: flex; flex-direction: column; min-height: 100vh; font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; background: #f9f9f9; line-height: 1.6; }
         
-        /* 顶部导航条 */
-        header { background: #2e7d32; color: #fff; padding: 15px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        /* 顶部导航条：增加 width: 100% 确保横向拉满 */
+        header { background: #2e7d32; color: #fff; padding: 15px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%; }
         .container { width: 90%; max-width: 1200px; margin: 0 auto; }
         .nav-box { display: flex; justify-content: space-between; align-items: center; }
         .nav-links { list-style: none; display: flex; gap: 20px; }
         .nav-links a { color: #fff; text-decoration: none; font-weight: bold; padding: 6px 14px; border-radius: 4px; transition: background .4s; }
         .nav-links a:hover, .nav-links a.active { background: linear-gradient(135deg, #a5d6a7, #81c784); color: #1b5e20; }
 
-        /* 主体双栏布局 */
-        .layout-wrapper { display: flex; max-width: 1200px; margin: 40px auto; gap: 36px; padding: 0 5% 0 0; min-height: 70vh; margin-left: 0; }
+        /* 修复侧边栏靠边问题：恢复 auto 居中与 5% 的左右留白 */
+        .layout-wrapper { display: flex; max-width: 1200px; width: 100%; margin: 40px auto; gap: 36px; padding: 0 5%; flex-grow: 1; }
         
-        /* 左侧边栏 - 桌面端 */
+        /* 左侧边栏 */
         .sidebar { width: 260px; flex-shrink: 0; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 20px 0; height: fit-content; position: sticky; top: 90px; }
         .sidebar h3 { padding: 0 20px 15px; border-bottom: 1px solid #eee; color: #1b5e20; font-size: 1.2rem; margin-bottom: 10px; }
         .category-list { list-style: none; }
@@ -65,15 +63,18 @@ export async function onRequest(context) {
         .category-list li a.active { background: #e8f5e9; border-left-color: #2e7d32; color: #2e7d32; font-weight: bold; }
 
         /* 右侧内容区 */
-        .main-content { flex-grow: 1; }
-        .content-header { display: flex; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }
-        .content-header h1 { color: #2e7d32; font-size: 1.8rem; }
+        .main-content { flex-grow: 1; min-width: 0; }
         
-        /* 汉堡包按钮 (默认隐藏，仅移动端显示) */
+        /* 修复按钮居右：使用 justify-content: space-between */
+        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }
+        .content-header h1 { color: #2e7d32; font-size: 1.8rem; margin: 0; }
+        .view-toggle { display: flex; gap: 8px; }
+        .view-toggle button { background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .view-toggle button.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
         .menu-toggle { display: none; background: none; border: none; font-size: 1.6rem; color: #fff; cursor: pointer; line-height: 1; padding: 0 4px; }
         .brand-row { display: flex; align-items: center; gap: 8px; }
 
-        /* 文章卡片网格[cite: 2] */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
         .card-link { text-decoration: none; color: inherit; display: block; transition: transform .3s, box-shadow .3s; }
         .card-link:hover { transform: translateY(-4px); box-shadow: 0 6px 16px rgba(46,125,50,.15); }
@@ -81,36 +82,27 @@ export async function onRequest(context) {
         .card h3 { color: #1b5e20; margin-bottom: 10px; font-size: 1.25rem; }
         .card p { color: #888; font-size: 0.9rem; }
         
-        /* 空状态提示 */
         .empty-state { text-align: center; color: #666; padding: 60px 0; background: #fff; border-radius: 8px; width: 100%; border: 1px dashed #ccc; font-size: 1.1rem; }
 
-        /* 列表/网格切换按钮 */
-        .view-toggle { display: flex; gap: 4px; margin-left: auto; }
-        .view-toggle button { background: #eee; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-        .view-toggle button.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
-
-        /* 列表模式：长条卡片 */
-        .grid.list { display: flex; flex-direction: column; gap: 14px; }
-        .grid.list .card-link { max-width: 100%; }
-        .grid.list .card { display: flex; align-items: center; gap: 20px; padding: 18px 24px; }
-        .grid.list .card h3 { margin-bottom: 0; flex: 1; }
-        .grid.list .card p { margin: 0; white-space: nowrap; color: #aaa; font-size: .82rem; }
+        /* 列表模式：严格的长条布局，拉满宽度 */
+        .grid.list { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+        .grid.list .card-link { width: 100%; }
+        .grid.list .card { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; width: 100%; box-sizing: border-box; }
+        .grid.list .card h3 { margin: 0; flex: 1; padding-right: 20px; }
+        .grid.list .card p.meta-info { margin: 0; white-space: nowrap; color: #999; font-size: .85rem; flex-shrink: 0; }
 
         /* 网格模式 */
         .grid.grid-mode { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
         .grid.grid-mode .card { display: block; }
-        .grid.grid-mode .card h3 { margin-bottom: 10px; }
-        .grid.grid-mode .card p { white-space: normal; }
+        .grid.grid-mode .card h3 { margin-bottom: 10px; padding-right: 0; }
+        .grid.grid-mode .card p.meta-info { white-space: normal; }
 
-        footer { margin-top: auto; background: #1b5e20; color: #fff; text-align: center; padding: 20px 0; margin-top: 40px; font-size: .9rem; }
+        /* 修复页脚截断：确保 width 为 100% */
+        footer { margin-top: auto; background: #1b5e20; color: #fff; text-align: center; padding: 20px 0; font-size: .9rem; width: 100%; }
         
-        /* 移动端遮罩层 */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; }
         .overlay.active { display: block; }
 
-        /* ==========================================
-           移动端响应式适配：侧边栏抽屉与汉堡包
-           ========================================== */
         @media(max-width: 860px) {
             .nav-box { flex-wrap: wrap; gap: 10px; }
             .nav-links { gap: 8px; }
@@ -119,8 +111,12 @@ export async function onRequest(context) {
             .menu-toggle { display: block; }
             .sidebar { position: fixed; top: 0; left: -280px; height: 100vh; width: 260px; margin: 0; z-index: 200; border-radius: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; overflow-y: auto; padding-top: 60px; }
             .sidebar.active { left: 0; }
-            .grid { grid-template-columns: 1fr; }
-            .card { padding: 20px 16px; }
+            
+            /* 手机端列表卡片自适应换行 */
+            .grid.list .card { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .grid.list .card p.meta-info { white-space: normal; }
+            .grid.list .card h3 { padding-right: 0; }
+            
             .content-header h1 { font-size: 1.4rem; }
         }
     </style>
@@ -144,11 +140,9 @@ export async function onRequest(context) {
     </div>
 </header>
 
-<!-- 移动端侧边栏开启时的遮罩层 -->
 <div class="overlay" id="overlay"></div>
 
 <div class="layout-wrapper">
-    <!-- 左侧导航树 -->
     <aside class="sidebar" id="sidebar">
         <h3>全部分类</h3>
         <ul class="category-list">
@@ -160,7 +154,6 @@ export async function onRequest(context) {
         </ul>
     </aside>
 
-    <!-- 右侧内容区 -->
     <main class="main-content">
         <div class="content-header">
             <h1>${catName}</h1>
@@ -180,7 +173,6 @@ export async function onRequest(context) {
 </footer>
 
 <script>
-    // 移动端汉堡包菜单的交互逻辑
     document.addEventListener("DOMContentLoaded", function() {
         const menuToggle = document.getElementById('menu-toggle');
         const sidebar = document.getElementById('sidebar');

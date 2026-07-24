@@ -1090,28 +1090,49 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         let approvedArticleContent = '';
 
-        async function loadArticleApprovedList() {
-            const container = document.getElementById('article-approved-list');
-            container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
-            try {
-                const res = await fetch('/api/articles/approved-list', { cache: 'no-store' });
-                const data = await res.json();
-                if (data.success && data.list && data.list.length > 0) {
-                    container.innerHTML = data.list.map(a => \`
-                        <div class="horizontal-card" onclick="previewApprovedArticle('\${a.id}')" style="padding:16px 20px;">
-                            <div style="font-weight:700;font-size:15px;color:#1b5e20;margin-bottom:6px;">\${a.title}</div>
-                            <div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--text-muted);">
-                                <span>作者：\${a.author}</span><span>|</span><span>审核：\${a.reviewer || '-'}</span>
-                                <span>|</span><span>分类：\${a.cat_name || '-'}</span>
-                            </div>
-                            <div style="font-size:12px;color:#aaa;margin-top:4px;">发布于 \${a.created_at.substring(0,10).replace(/-/g,'/')}</div>
-                        </div>
-                    \`).join('');
-                } else {
-                    container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
-                }
-            } catch (e) { container.innerHTML = '<p style="color:red;">加载失败</p>'; }
+async function loadArticleApprovedList() {
+    const container = document.getElementById('article-approved-list');
+    container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
+    try {
+        const res = await fetch('/api/articles/approved-list', { cache: 'no-store' });
+        const data = await res.json();
+        if (data.success && data.list && data.list.length > 0) {
+            // 注入响应式样式
+            const style = \`
+                <style>
+                    .dash-card { display: flex; align-items: center; padding: 16px 20px; background: #fff; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border-left: 4px solid #2e7d32; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: transform 0.2s; }
+                    .dash-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+                    .dash-title { font-weight: 700; font-size: 15px; color: #1b5e20; width: 220px; flex-shrink: 0; padding-right: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                    .dash-meta { display: flex; flex: 1; gap: 16px; font-size: 13px; color: #666; }
+                    .dash-divider { color: #ddd; }
+                    .dash-date { font-size: 12px; color: #aaa; margin-left: 16px; flex-shrink: 0; }
+                    
+                    /* 移动端自动断行并隐藏分隔符 */
+                    @media(max-width: 768px) {
+                        .dash-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+                        .dash-title { width: 100%; white-space: normal; padding-right: 0; }
+                        .dash-meta { flex-direction: column; gap: 6px; }
+                        .dash-divider { display: none; }
+                        .dash-date { margin-left: 0; margin-top: 4px; }
+                    }
+                </style>
+            \`;
+            container.innerHTML = style + data.list.map(a => \`
+                <div class="dash-card" onclick="previewApprovedArticle('\${a.id}')">
+                    <div class="dash-title">\${a.title}</div>
+                    <div class="dash-meta">
+                        <span>作者：\${a.author}</span><span class="dash-divider">|</span>
+                        <span>审核：\${a.reviewer || '-'}</span><span class="dash-divider">|</span>
+                        <span>分类：\${a.cat_name || '-'}</span>
+                    </div>
+                    <div class="dash-date">发布于 \${a.created_at.substring(0,10).replace(/-/g,'/')}</div>
+                </div>
+            \`).join('');
+        } else {
+            container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
         }
+    } catch (e) { container.innerHTML = '<p style="color:red;">加载失败</p>'; }
+}
 
         async function previewApprovedArticle(articleId) {
             try {
