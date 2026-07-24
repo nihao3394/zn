@@ -333,6 +333,13 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .wiki-drawer { width: 280px; right: -280px; }
             .wiki-trigger-zone { width: 32px; background: rgba(46,125,50,0.08); border-radius: 6px 0 0 6px; }
 
+            /* 取消移动端的原生 hover 触发，避免触屏卡死，改为依靠类名控制 */
+            .wiki-trigger-zone:hover + .wiki-drawer,
+            .wiki-drawer:hover { right: -280px; } 
+            .wiki-trigger-zone.active + .wiki-drawer,
+            .wiki-drawer.open,
+            .wiki-drawer:focus-within { right: 0 !important; }
+
             .horizontal-card { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; }
         }
 
