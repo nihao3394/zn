@@ -641,7 +641,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <select id="my-article-cat-select" class="form-control"></select>
             </div>
             <div style="color:#999;font-size:12px;margin-bottom:8px;">
-                状态：<span id="my-article-status"></span> | 分类：<span id="my-article-cat"></span>
+                状态：<span id="my-article-status">
             </div>
             <div class="btn-group" style="justify-content:flex-end;">
                 <button class="btn btn-primary" id="my-article-btn-save" onclick="updateMyArticle('draft')">💾 保存</button>
