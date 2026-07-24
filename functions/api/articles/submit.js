@@ -56,14 +56,13 @@ export async function onRequestPost(context) {
         // 确定状态
         const status = finalAction === "submit" ? "pending" : "draft";
 
+        // 提前生成并固定文章 ID，避免二次查询
+        const articleId = crypto.randomUUID();
+
         // 写入文章
         await db.prepare(
             "INSERT INTO articles (id, title, content, author, category_id, status, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        ).bind(crypto.randomUUID(), title, content, username, category_id, status, finalSlug, now, now).run();
-
-        // 读取刚插入的文章 ID
-        const article = await db.prepare("SELECT id FROM articles WHERE slug = ?").bind(finalSlug).first();
-        const articleId = article.id;
+        ).bind(articleId, title, content, username, category_id, status, finalSlug, now, now).run();
 
         // 写入标签
         // 标签归一化：支持中英文逗号分隔的字符串转为数组
@@ -74,12 +73,11 @@ export async function onRequestPost(context) {
             normalizedTags = tags.slice(0, 20);
         }
 
+        // 使用 db.batch() 批量执行标签插入，大幅降低 D1 请求延迟
         if (normalizedTags && normalizedTags.length > 0) {
-            const stmt = db.prepare("INSERT OR IGNORE INTO article_tags (article_id, tag) VALUES (?, ?)");
-            for (const tag of normalizedTags) {
-                const t = tag.trim();
-                if (t) await stmt.bind(articleId, t).run();
-            }
+            const tagStmt = db.prepare("INSERT OR IGNORE INTO article_tags (article_id, tag) VALUES (?, ?)");
+            const batchStmts = normalizedTags.map(tag => tagStmt.bind(articleId, tag));
+            await db.batch(batchStmts);
         }
 
         const msg = status === "draft" ? "草稿已保存" : "已提交审核，请等待审核员批准";
