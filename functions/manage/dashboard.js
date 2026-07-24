@@ -1037,6 +1037,16 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const url = isUpdate ? '/api/articles/update' : '/api/articles/submit';
                 if (isUpdate) payload.article_id = currentArticleId;
 
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 30000);
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1049,7 +1059,12 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     showToast(data.msg, 'success');
                     localStorage.removeItem('zn_draft');
                     if (action === 'submit') clearEditor();
-                } else { msgBox.style.color = 'red'; msgBox.innerText = data.msg; }
+                } else if (isUpdate && data.msg && data.msg.includes('不存在')) {
+                    // 文章已被删除，回退为新建
+                    currentArticleId = null;
+                    saveArticle(action);
+                    return;
+            } else { msgBox.style.color = 'red'; msgBox.innerText = data.msg; 
             } catch (e) { msgBox.style.color = 'red'; msgBox.innerText = '网络异常: ' + (e.message || e); }
         }
 
