@@ -145,12 +145,8 @@ export async function onRequest(context) {
 <div class="layout-wrapper">
     <aside class="sidebar" id="sidebar">
         <h3>全部分类</h3>
-        <ul class="category-list">
-            <li><a href="/wiki/list?cat=modern-farming" class="${catSlug === 'modern-farming' ? 'active' : ''}">现代农业种植技术</a></li>
-            <li><a href="/wiki/list?cat=pest-control" class="${catSlug === 'pest-control' ? 'active' : ''}">病虫害绿色防治指南</a></li>
-            <li><a href="/wiki/list?cat=ecommerce" class="${catSlug === 'ecommerce' ? 'active' : ''}">农产品电商运营入门</a></li>
-            <li><a href="/wiki/list?cat=recent-policies" class="${catSlug === 'recent-policies' ? 'active' : ''}">近年惠农政策解读</a></li>
-            <li><a href="/wiki/list?cat=rural-tourism" class="${catSlug === 'rural-tourism' ? 'active' : ''}">乡村旅游与文创开发</a></li>
+        <ul class="category-list" id="category-list">
+            <li><a href="#" style="color:#999;">加载中...</a></li>
         </ul>
     </aside>
 
@@ -196,6 +192,23 @@ export async function onRequest(context) {
         document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
     }
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    const list = document.getElementById('category-list');
+    try {
+        const res = await fetch('/api/articles/categories');
+        const data = await res.json();
+        const subs = (data.list || []).filter(c => c.parent_id);
+        if (subs.length === 0) { list.innerHTML = '<li><a href="#" style="color:#999;">暂无分类</a></li>'; return; }
+        const currentSlug = '${catSlug}';
+        list.innerHTML = subs.map(c =>
+            \`<li><a href="/wiki/list?cat=\${c.slug}" class="\${c.slug === currentSlug ? 'active' : ''}">\${c.name}</a></li>\`
+        ).join('');
+    } catch(e) { list.innerHTML = '<li><a href="#" style="color:red;">加载失败</a></li>'; }
+});
+</script>
+
 </body>
 </html>`;
 
