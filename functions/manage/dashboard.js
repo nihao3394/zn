@@ -817,6 +817,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         // ——— 文章分类数据（从 API 动态加载） ———
         let CATEGORIES = { parents: [], subs: {} };
         let catAddParentId = null;
+        let currentArticleId = null;
+        let selectedParentId = null;
+        let selectedSubId = null;
+        let articleTags = [];
 
         function selectParentCat(btn) {
             selectedParentId = parseInt(btn.getAttribute('data-id'));
