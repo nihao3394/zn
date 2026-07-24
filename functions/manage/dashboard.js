@@ -1098,11 +1098,12 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const data = await res.json();
                 if (data.success && data.list && data.list.length > 0) {
                     container.innerHTML = data.list.map(a => \`
-                        <div class="horizontal-card" style="flex-wrap:wrap;" onclick="previewApprovedArticle('\${a.id}')">
-                            <div style="width:100%;font-weight:600;font-size:15px;color:var(--text-main);margin-bottom:4px;">\${a.title}</div>
-                            <div style="width:100%;font-size:13px;color:var(--text-muted);margin-bottom:2px;">作者：\${a.author} | 审核员：\${a.reviewer || '-'}</div>
-                            <div style="width:100%;font-size:13px;color:var(--text-muted);margin-bottom:2px;">分类：\${a.cat_name || '-'}</div>
-                            <div style="width:100%;font-size:12px;color:#aaa;">\${new Date(a.created_at).toLocaleDateString()}</div>
+                        <div class="horizontal-card" style="flex-wrap:wrap;gap:12px 24px;" onclick="previewApprovedArticle('\${a.id}')">
+                            <span style="font-weight:600;font-size:15px;color:var(--text-main);flex:1;min-width:180px;">\${a.title}</span>
+                            <span style="font-size:13px;color:var(--text-muted);">作者：\${a.author}</span>
+                            <span style="font-size:13px;color:var(--text-muted);">审核：\${a.reviewer || '-'}</span>
+                            <span style="font-size:13px;color:var(--text-muted);">分类：\${a.cat_name || '-'}</span>
+                            <span style="font-size:12px;color:#aaa;">\${new Date(a.created_at).toLocaleDateString()}</span>
                         </div>
                     \`).join('');
                 } else {

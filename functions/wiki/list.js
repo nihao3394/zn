@@ -82,7 +82,25 @@ export async function onRequest(context) {
         .card p { color: #888; font-size: 0.9rem; }
         
         /* 空状态提示 */
-        .empty-state { text-align: center; color: #666; padding: 60px 0; background: #fff; border-radius: 8px; grid-column: 1 / -1; border: 1px dashed #ccc; font-size: 1.1rem; }
+        .empty-state { text-align: center; color: #666; padding: 60px 0; background: #fff; border-radius: 8px; width: 100%; border: 1px dashed #ccc; font-size: 1.1rem; }
+
+        /* 列表/网格切换按钮 */
+        .view-toggle { display: flex; gap: 4px; margin-left: auto; }
+        .view-toggle button { background: #eee; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .view-toggle button.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
+        /* 列表模式：长条卡片 */
+        .grid.list { display: flex; flex-direction: column; gap: 14px; }
+        .grid.list .card-link { max-width: 100%; }
+        .grid.list .card { display: flex; align-items: center; gap: 20px; padding: 18px 24px; }
+        .grid.list .card h3 { margin-bottom: 0; flex: 1; }
+        .grid.list .card p { margin: 0; white-space: nowrap; color: #aaa; font-size: .82rem; }
+
+        /* 网格模式 */
+        .grid.grid-mode { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+        .grid.grid-mode .card { display: block; }
+        .grid.grid-mode .card h3 { margin-bottom: 10px; }
+        .grid.grid-mode .card p { white-space: normal; }
 
         footer { margin-top: auto; background: #1b5e20; color: #fff; text-align: center; padding: 20px 0; margin-top: 40px; font-size: .9rem; }
         
@@ -146,8 +164,12 @@ export async function onRequest(context) {
     <main class="main-content">
         <div class="content-header">
             <h1>${catName}</h1>
+            <div class="view-toggle">
+                <button id="btn-list" class="active" onclick="setView('list')">☰ 列表</button>
+                <button id="btn-grid" onclick="setView('grid')">▦ 网格</button>
+            </div>
         </div>
-        <div class="grid">
+        <div class="grid list">
             ${cardsHtml}
         </div>
     </main>
@@ -172,6 +194,14 @@ export async function onRequest(context) {
 
         menuToggle.addEventListener('click', toggleMenu);
         overlay.addEventListener('click', toggleMenu);
+
+        function setView(mode) {
+            const grid = document.querySelector('.grid');
+            grid.className = 'grid ' + mode;
+            if (mode === 'grid') grid.classList.add('grid-mode');
+            document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+            document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
+        }
     });
 </script>
 </body>
