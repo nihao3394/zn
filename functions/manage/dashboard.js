@@ -444,7 +444,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="form-group">
                     <label>自定义标签（输入后回车添加）</label>
                     <div class="tag-input-row" id="tag-row">
-                        <input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+                        <input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">
                     </div>
                 </div>
 
@@ -765,7 +765,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             row.innerHTML = articleTags.map(t =>
                 \`<span class="tag-chip">\${t}<span class="tag-remove" onclick="removeTag('\${t}')">×</span></span>\`
             ).join('') +
-                '<input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addTag();}">';
+                '<input type="text" id="tag-input" class="form-control" style="width:160px;" placeholder="输入标签后回车" onkeydown="if(event.keyCode===13){event.preventDefault();addTag();}">';
         }
 
         // ——— Vditor 初始化 ———
