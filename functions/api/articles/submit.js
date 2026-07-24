@@ -66,9 +66,17 @@ export async function onRequestPost(context) {
         const articleId = article.id;
 
         // 写入标签
-        if (tags && Array.isArray(tags) && tags.length > 0) {
+        // 标签归一化：支持中英文逗号分隔的字符串转为数组
+        let normalizedTags = [];
+        if (typeof tags === "string") {
+            normalizedTags = tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20);
+        } else if (Array.isArray(tags)) {
+            normalizedTags = tags.slice(0, 20);
+        }
+
+        if (normalizedTags && normalizedTags.length > 0) {
             const stmt = db.prepare("INSERT OR IGNORE INTO article_tags (article_id, tag) VALUES (?, ?)");
-            for (const tag of tags) {
+            for (const tag of normalizedTags) {
                 const t = tag.trim();
                 if (t) await stmt.bind(articleId, t).run();
             }

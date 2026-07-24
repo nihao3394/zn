@@ -357,6 +357,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         #vditor-container { min-height: 400px; border: 1px solid var(--border-color); border-radius: 6px; }
 
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -463,9 +464,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         <!-- 1.6. 文章审核面板 -->
         <section id="panel-article-audit" class="view-panel">
-            <div id="article-audit-list">
-                <p style="text-align:center;color:#999;">文章审核功能即将上线</p>
-            </div>
+            <div id="article-audit-list"></div>
         </section>
 
         <!-- 2. 注册审核面板 (管理员) -->
@@ -569,6 +568,25 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </div>
     </div>
 
+    <!-- 弹窗：文章全文预览 -->
+    <div id="modal-article-preview" class="modal-overlay">
+        <div class="modal-card" style="max-width:800px;max-height:85vh;overflow-y:auto;">
+            <h4 id="preview-title" style="margin-bottom:8px;"></h4>
+            <p style="font-size:12px;color:#999;margin-bottom:12px;">
+                作者：<span id="preview-author"></span> | 分类：<span id="preview-cat"></span>
+            </p>
+            <hr style="margin-bottom:16px;">
+            <div id="preview-body" style="font-size:14px;line-height:1.8;"></div>
+            <hr style="margin-top:16px;margin-bottom:12px;">
+            <div id="preview-tags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            <div class="btn-group" style="justify-content:flex-end;margin-top:16px;">
+                <button class="btn btn-primary" id="preview-btn-approve">通过审核</button>
+                <button class="btn btn-danger" id="preview-btn-reject">驳回文章</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-article-preview')">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全局状态管理
         // 核心注入点：直接利用模板字符串的 \${} 语法，将传入的 userCtx 变量注入到 JS 中
@@ -652,6 +670,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     switch (currentTab) {
                         case 'user-audit':        loadUserAuditList(); break;
                         case 'keyword-audit':     loadKeywordAuditList(); break;
+                        case 'article-audit':     loadArticleAuditList(); break;
                         case 'keyword-approved':  loadKeywordApprovedList(); break;
                         case 'members':           loadMemberList(); break;
                     }
@@ -747,6 +766,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         // ——— 标签管理 ———
         function addTag() {
+            if (articleTags.length >= 20) { showToast('最多添加20个标签', 'warn'); input.value = ''; return; }
             const input = document.getElementById('tag-input');
             const tag = input.value.trim();
             if (!tag || articleTags.includes(tag)) { input.value = ''; return; }
@@ -829,7 +849,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     body: JSON.stringify({
                         title, content,
                         category_id: selectedSubId,
-                        tags: articleTags,
+                        tags: articleTags.join(","),
                         action
                     })
                 });
@@ -854,6 +874,79 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             } catch (e) {
                 msgBox.style.color = 'red';
                 msgBox.innerText = '网络异常: ' + (e.message || e);
+            }
+        }
+
+        // ——— 文章审核列表 ———
+        async function loadArticleAuditList() {
+            const container = document.getElementById('article-audit-list');
+            container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/articles/pending-list', { method: 'GET', cache: 'no-store' });
+                const data = await res.json();
+                document.getElementById('article-pending-count').innerText = data.list ? data.list.length : 0;
+                if (data.success && data.list && data.list.length > 0) {
+                    container.innerHTML = data.list.map(a => \`
+                        <div class="horizontal-card" onclick="previewArticle('\${a.id}')">
+                            <div class="card-meta">
+                                <span class="card-title">\${a.title}</span>
+                                <span class="card-sub">作者：\${a.author}</span>
+                                <span class="card-sub">分类：\${a.cat_name || '-'}</span>
+                            </div>
+                            <span class="card-sub">\${new Date(a.created_at).toLocaleDateString()}</span>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">当前无待审核的文章</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;text-align:center;">加载失败</p>';
+            }
+        }
+
+        let previewArticleId = null;
+
+        async function previewArticle(articleId) {
+            previewArticleId = articleId;
+            try {
+                const res = await fetch('/api/articles/detail?id=' + articleId, { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success) {
+                    const a = data.article;
+                    document.getElementById('preview-title').innerText = a.title;
+                    document.getElementById('preview-author').innerText = a.author;
+                    document.getElementById('preview-cat').innerText = a.cat_name || '-';
+                    document.getElementById('preview-body').innerHTML = marked.parse(a.content || '');
+                    const tagsDiv = document.getElementById('preview-tags');
+                    tagsDiv.innerHTML = (a.tags || []).map(t => \`<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:12px;">#\${t}</span>\`).join('');
+                    document.getElementById('preview-btn-approve').onclick = () => reviewArticle(articleId, 'approve');
+                    document.getElementById('preview-btn-reject').onclick = () => reviewArticle(articleId, 'reject');
+                    openModal('modal-article-preview');
+                } else {
+                    showToast(data.msg || '加载失败');
+                }
+            } catch (e) {
+                showToast('加载失败');
+            }
+        }
+
+        async function reviewArticle(articleId, action) {
+            try {
+                const res = await fetch('/api/articles/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article_id: articleId, action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.msg, 'success');
+                    closeModal('modal-article-preview');
+                    loadArticleAuditList();
+                } else {
+                    showToast(data.msg || '操作失败');
+                }
+            } catch (e) {
+                showToast('操作失败');
             }
         }
 
