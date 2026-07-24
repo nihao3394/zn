@@ -1,3 +1,22 @@
 name = "zn"
 compatibility_date = "2025-07-01"
 pages_build_output_dir = "."
+
+# === KV 命名空间 ===
+[[kv_namespaces]]
+binding = "USER_DB"
+id = "644057254a90432dad6e70b5ccb32a63"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "02734951516748b396f8b910171e4a48"
+
+[[kv_namespaces]]
+binding = "WIKI_DB"
+id = "07843a69e4794a638dc2c8202cf8a9f8"
+
+# === D1 数据库 ===
+[[d1_databases]]
+binding = "ARTICLE_DB"
+database_name = "article_db"
+database_id = "d2ad234f-804a-491d-b4c9-8643eaab132c"
