@@ -415,12 +415,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         <!-- 1. 维基百科面板 -->
         <section id="panel-wiki" class="view-panel active" style="padding:0;">
-            <div class="wiki-container">
+            <div class="wiki-container" onclick="if(!event.target.closest('.wiki-drawer')&&!event.target.closest('.wiki-trigger-zone'))closeDrawer()">
                 <iframe id="wiki-frame" class="wiki-iframe" src="https://wiki.findingstar.top"></iframe>
                 <!-- 添加 onclick 事件，点击时切换 open 和 active 状态 -->
-                <div class="wiki-trigger-zone" onclick="document.getElementById('wiki-drawer-panel').classList.toggle('open'); this.classList.toggle('active')"></div>
+                <div class="wiki-trigger-zone" onclick="toggleWikiDrawer()"></div>
                 <!-- 侧边抽屉 -->
                 <div id="wiki-drawer-panel" class="wiki-drawer">
+                    <!-- 移动端专属的关闭按钮 -->
+                    <div class="wiki-drawer-close" onclick="closeWikiDrawer()">×</div>
                     <h4>提交新词条词条申请</h4>
                     <div class="form-group">
                         <label>您要提交的关键词：</label>
@@ -1019,6 +1021,16 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const payload = { title, content, category_id: selectedSubId, tags: articleTags.join(","), action };
             
             // 只要当前有已创建的 currentArticleId，无论什么 action 都视为更新
+            // 尝试从 localStorage 恢复 articleId（防止刷新后丢失）
+            if (!currentArticleId) {
+                const saved = localStorage.getItem('zn_draft');
+                if (saved) {
+                    try {
+                        const draft = JSON.parse(saved);
+                        if (draft.articleId) currentArticleId = draft.articleId;
+                    } catch(e) {}
+                }
+            }
             const isUpdate = !!currentArticleId;
 
             try {
@@ -1175,7 +1187,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
                 document.getElementById('my-article-title-display').innerText = article.title;
                 document.getElementById('my-article-title-input').value = article.title;
-                document.getElementById('my-article-content').value = article.content;
+                
+                // 【修复核心】增加容错处理：确保 content 存在，如果为 null/undefined 则回退为空字符串
+                document.getElementById('my-article-content').value = article.content || '';
+                
                 document.getElementById('my-article-tags').value = (article.tags || []).join(',');
                 document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
 
@@ -1455,8 +1470,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         function closeDrawer() {
             const drawer = document.getElementById('wiki-drawer-panel');
-            drawer.style.right = '-360px'; 
+            drawer.style.right = '-360px';
             if (document.activeElement) document.activeElement.blur();
+            // 清除 force-open 状态
+            drawer.classList.remove('force-open');
             setTimeout(() => { drawer.style.right = ''; }, 300);
         }
 
