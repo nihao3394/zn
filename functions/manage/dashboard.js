@@ -372,9 +372,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             <ul class="nav-list">
                 <li class="nav-item active" onclick="switchTab('wiki')">🌐 维基百科</li>
                 <li class="nav-item" onclick="switchTab('article-editor')">✏️ 文章撰写</li>
+                <li class="nav-item" onclick="switchTab('my-articles')">📋 我的文章</li>
                 <li class="nav-item role-admin-only" onclick="switchTab('user-audit')">📝 注册审核 <span id="user-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-article-reviewer-only" onclick="switchTab('article-audit')">📄 文章审核 <span id="article-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-reviewer-only" onclick="switchTab('keyword-audit')">🔍 词条审核 <span id="kw-pending-count" class="role-badge">0</span></li>
+                <li class="nav-item" onclick="switchTab('article-approved')">📰 过审文章</li>
                 <li class="nav-item" onclick="switchTab('keyword-approved')">✅ 过审词条</li>
                 <li class="nav-item" onclick="switchTab('members')">👥 全体成员</li>
                 <li class="nav-item" onclick="switchTab('settings')">⚙️ 个人设置</li>
@@ -480,6 +482,16 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             <div id="keyword-audit-list">
                 <!-- 动态渲染长条卡片 -->
             </div>
+        </section>
+
+        <!-- 3.3. 我的文章面板 -->
+        <section id="panel-my-articles" class="view-panel">
+            <div id="my-articles-list"></div>
+        </section>
+
+        <!-- 3.4. 过审文章面板 -->
+        <section id="panel-article-approved" class="view-panel">
+            <div id="article-approved-list"></div>
         </section>
 
         <!-- 3.5. 过审词条面板 (所有身份可见) -->
@@ -588,6 +600,33 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </div>
     </div>
 
+    <!-- 弹窗：我的文章编辑 -->
+    <div id="modal-my-article" class="modal-overlay">
+        <div class="modal-card" style="max-width:800px;max-height:85vh;overflow-y:auto;">
+            <h4 id="my-article-title-display" style="margin-bottom:12px;"></h4>
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="my-article-title-input" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>正文（Markdown）</label>
+                <textarea id="my-article-content" class="form-control" rows="18" style="font-family:monospace;font-size:13px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>标签（逗号分隔）</label>
+                <input type="text" id="my-article-tags" class="form-control" placeholder="标签1,标签2">
+            </div>
+            <div style="color:#999;font-size:12px;margin-bottom:8px;">
+                状态：<span id="my-article-status"></span> | 分类：<span id="my-article-cat"></span>
+            </div>
+            <div class="btn-group" style="justify-content:flex-end;">
+                <button class="btn btn-primary" id="my-article-btn-save" onclick="updateMyArticle('draft')">💾 保存</button>
+                <button class="btn btn-primary" style="background:#e6a817;" id="my-article-btn-submit" onclick="updateMyArticle('submit')">📤 提交审核</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-my-article')">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全局状态管理
         // 核心注入点：直接利用模板字符串的 \${} 语法，将传入的 userCtx 变量注入到 JS 中
@@ -672,6 +711,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                         case 'user-audit':        loadUserAuditList(); break;
                         case 'keyword-audit':     loadKeywordAuditList(); break;
                         case 'article-audit':     loadArticleAuditList(); break;
+                        case 'my-articles':       loadMyArticles(); break;
+                        case 'article-approved':  loadArticleApprovedList(); break;
                         case 'keyword-approved':  loadKeywordApprovedList(); break;
                         case 'members':           loadMemberList(); break;
                     }
@@ -698,6 +739,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             loadUserAuditList();
             loadKeywordAuditList();
             loadKeywordApprovedList();
+            loadMyArticles();
+            loadArticleApprovedList();
             loadMemberList();
             startPolling();
         });
@@ -822,7 +865,20 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                         'preview', 'fullscreen'
                     ],
                     cache: { enable: false },
-                    after: () => {}
+                    after: () => {
+                        // 恢复localStorage草稿
+                        const saved = localStorage.getItem('zn_draft');
+                        if (saved) {
+                            try {
+                                const draft = JSON.parse(saved);
+                                if (draft.content) window.vditorInstance.setValue(draft.content);
+                                if (draft.title) document.getElementById('article-title').value = draft.title;
+                                if (draft.parentId) { selectedParentId = draft.parentId; /* 恢复按钮高亮 */ }
+                                if (draft.subId) { selectedSubId = draft.subId; }
+                                if (draft.tags) { articleTags = draft.tags; renderTags(); }
+                            } catch(e) {}
+                        }
+                    }
                 });
             })();
         }
@@ -859,6 +915,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     msgBox.style.color = 'green';
                     msgBox.innerText = data.msg;
                     showToast(data.msg, 'success');
+                    localStorage.removeItem('zn_draft');
                     if (action === 'submit') {
                         // 清空表单
                         document.getElementById('article-title').value = '';
@@ -951,6 +1008,109 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             }
         }
 
+        // ——— 我的文章列表 ———
+        let myArticleId = null;
+
+        async function loadMyArticles() {
+            const container = document.getElementById('my-articles-list');
+            container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/articles/my-list', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success && data.list && data.list.length > 0) {
+                    const statusMap = { draft: '草稿', pending: '待审核', approved: '已发布', rejected: '已驳回' };
+                    const statusColor = { draft: '#888', pending: '#e6a817', approved: '#2e7d32', rejected: '#c62828' };
+                    container.innerHTML = data.list.map(a => \`
+                        <div class="horizontal-card" onclick="openMyArticle('\${a.id}')">
+                            <div class="card-meta">
+                                <span class="card-title">\${a.title}</span>
+                                <span class="card-sub">分类：\${a.cat_name || '-'}</span>
+                                <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:\${statusColor[a.status]};color:#fff;">\${statusMap[a.status] || a.status}</span>
+                            </div>
+                            <span class="card-sub">\${new Date(a.updated_at).toLocaleString()}</span>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">你还没有撰写过文章</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;">加载失败</p>';
+            }
+        }
+
+        async function openMyArticle(articleId) {
+            myArticleId = articleId;
+            try {
+                const res = await fetch('/api/articles/my-list', { cache: 'no-store' });
+                const data = await res.json();
+                const article = (data.list || []).find(a => a.id === articleId);
+                if (!article) { showToast('文章未找到'); return; }
+
+                document.getElementById('my-article-title-display').innerText = article.title;
+                document.getElementById('my-article-title-input').value = article.title;
+                document.getElementById('my-article-content').value = article.content;
+                document.getElementById('my-article-tags').value = (article.tags || []).join(',');
+                document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
+                document.getElementById('my-article-cat').innerText = article.cat_name || '-';
+
+                const canEdit = article.status === 'draft' || article.status === 'rejected';
+                document.getElementById('my-article-title-input').disabled = !canEdit;
+                document.getElementById('my-article-content').disabled = !canEdit;
+                document.getElementById('my-article-tags').disabled = !canEdit;
+                document.getElementById('my-article-btn-save').style.display = canEdit ? '' : 'none';
+                document.getElementById('my-article-btn-submit').style.display = canEdit ? '' : 'none';
+
+                openModal('modal-my-article');
+            } catch (e) { showToast('加载失败'); }
+        }
+
+        async function updateMyArticle(action) {
+            const title = document.getElementById('my-article-title-input').value.trim();
+            const content = document.getElementById('my-article-content').value;
+            const tags = document.getElementById('my-article-tags').value;
+            if (!title || !content) { showToast('标题和内容不能为空', 'warn'); return; }
+
+            try {
+                const res = await fetch('/api/articles/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article_id: myArticleId, title, content, tags, action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.msg, 'success');
+                    closeModal('modal-my-article');
+                    loadMyArticles();
+                } else { showToast(data.msg || '操作失败'); }
+            } catch (e) { showToast('操作失败'); }
+        }
+
+        async function loadArticleApprovedList() {
+            const container = document.getElementById('article-approved-list');
+            container.innerHTML = '<p style="text-align:center;color:#999;">正在加载...</p>';
+            try {
+                const res = await fetch('/api/articles/approved-list', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.success && data.list && data.list.length > 0) {
+                    container.innerHTML = data.list.map(a => \`
+                        <div class="horizontal-card">
+                            <div class="card-meta">
+                                <span class="card-title">\${a.title}</span>
+                                <span class="card-sub">作者：\${a.author}</span>
+                                <span class="card-sub">审核员：\${a.reviewer || '-'}</span>
+                                <span class="card-sub">分类：\${a.cat_name || '-'}</span>
+                            </div>
+                            <span class="card-sub">\${new Date(a.created_at).toLocaleDateString()}</span>
+                        </div>
+                    \`).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">暂无已通过的文章</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color:red;">加载失败</p>';
+            }
+        }
+
         // Tab 切换逻辑
         function switchTab(tabKey) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -962,9 +1122,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const titles = {
                 'wiki': '维基百科镜像',
                 'article-editor': '文章撰写',
+                'my-articles': '我的文章',
                 'user-audit': '用户注册申请审核',
                 'article-audit': '文章审核',
                 'keyword-audit': '待审核词条管理',
+                'article-approved': '过审文章列表',
                 'keyword-approved': '已通过词条列表',
                 'members': '全体成员列表',
                 'settings': '个人控制台设置'
@@ -1195,8 +1357,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                             <td><span class="role-badge">\${m.role}</span></td>
                             <td class="role-admin-only">
                                 \${m.username === ROOT_USER ? '<span style="color:#999;font-size:12px;"></span>' : \`
-                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'admin')">设为管理员</button>
+                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'article_reviewer')">设为文章审核员</button>
+                                <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'keyword_reviewer')">设为词条审核员</button>
                                 <button class="btn btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="changeUserRole('\${m.username}', 'member')">设为普通成员</button>
                                 \`}
                             </td>
