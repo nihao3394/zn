@@ -36,7 +36,7 @@ export async function onRequest(context) {
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;background:#f9f9f9;line-height:1.8}
+        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;background:#f9f9f9;line-height:1.8;display:flex;flex-direction:column;min-height:100vh}
         header{background:#2e7d32;color:#fff;padding:12px 0}
         .container{width:85%;max-width:860px;margin:0 auto}
         .nav-box{display:flex;justify-content:space-between;align-items:center}
@@ -56,7 +56,7 @@ export async function onRequest(context) {
         .article-body blockquote{border-left:3px solid #a5d6a7;padding-left:16px;color:#666;margin:12px 0}
         .article-body img{max-width:100%;border-radius:6px}
         .tags-row{display:flex;gap:6px;flex-wrap:wrap;padding:16px 0;border-top:1px solid #eee;margin-bottom:30px}
-        footer{background:#1b5e20;color:#fff;text-align:center;padding:16px 0;font-size:.85rem}
+        footer{background:#1b5e20;color:#fff;text-align:center;padding:16px 0;font-size:.85rem;margin-top:auto}
         @media(max-width:768px){.container{width:92%}.article-header h1{font-size:1.4rem}.nav-box{flex-direction:column;gap:8px}}
     </style>
 </head>

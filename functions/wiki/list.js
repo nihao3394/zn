@@ -54,7 +54,7 @@ export async function onRequest(context) {
         .nav-links a:hover, .nav-links a.active { background: linear-gradient(135deg, #a5d6a7, #81c784); color: #1b5e20; }
 
         /* 主体双栏布局 */
-        .layout-wrapper { display: flex; max-width: 1200px; margin: 30px auto; gap: 30px; padding: 0 5%; min-height: 70vh; }
+        .layout-wrapper { display: flex; max-width: 1200px; margin: 40px auto; gap: 36px; padding: 0 5%; min-height: 70vh; }
         
         /* 左侧边栏 - 桌面端 */
         .sidebar { width: 260px; flex-shrink: 0; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 20px 0; height: fit-content; position: sticky; top: 90px; }
@@ -69,15 +69,15 @@ export async function onRequest(context) {
         .content-header { display: flex; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }
         .content-header h1 { color: #2e7d32; font-size: 1.8rem; }
         
-        /* 移动端汉堡包按钮 (默认隐藏) */
-        .menu-toggle { display: none; background: none; border: none; font-size: 1.8rem; color: #2e7d32; cursor: pointer; margin-right: 15px; }
-        .menu-toggle div { width: 24px; height: 3px; background-color: #2e7d32; margin: 5px 0; transition: 0.4s; }
+        /* 汉堡包按钮 (默认隐藏，仅移动端显示) */
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.6rem; color: #fff; cursor: pointer; line-height: 1; padding: 0 4px; }
+        .brand-row { display: flex; align-items: center; gap: 8px; }
 
         /* 文章卡片网格[cite: 2] */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
         .card-link { text-decoration: none; color: inherit; display: block; transition: transform .3s, box-shadow .3s; }
         .card-link:hover { transform: translateY(-4px); box-shadow: 0 6px 16px rgba(46,125,50,.15); }
-        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid #2e7d32; }
+        .card { background: #fff; border-radius: 8px; padding: 28px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid #2e7d32; }
         .card h3 { color: #1b5e20; margin-bottom: 10px; font-size: 1.25rem; }
         .card p { color: #888; font-size: 0.9rem; }
         
@@ -94,21 +94,16 @@ export async function onRequest(context) {
            移动端响应式适配：侧边栏抽屉与汉堡包
            ========================================== */
         @media(max-width: 860px) {
-            .nav-box { flex-direction: column; gap: 10px; }
-            .layout-wrapper { flex-direction: column; padding: 0 5%; margin: 20px auto; }
-            
-            /* 汉堡包按钮显示 */
+            .nav-box { flex-wrap: wrap; gap: 10px; }
+            .nav-links { gap: 8px; }
+            .nav-links a { padding: 4px 8px; font-size: .82rem; }
+            .layout-wrapper { flex-direction: column; padding: 0 4%; margin: 24px auto; gap: 0; }
             .menu-toggle { display: block; }
-            
-            /* 侧边栏改为绝对定位的抽屉 */
-            .sidebar { 
-                position: fixed; top: 0; left: -280px; height: 100vh; width: 260px; 
-                margin: 0; z-index: 200; border-radius: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); 
-                transition: left 0.3s ease; overflow-y: auto; padding-top: 20px;
-            }
+            .sidebar { position: fixed; top: 0; left: -280px; height: 100vh; width: 260px; margin: 0; z-index: 200; border-radius: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; overflow-y: auto; padding-top: 60px; }
             .sidebar.active { left: 0; }
-            
             .grid { grid-template-columns: 1fr; }
+            .card { padding: 20px 16px; }
+            .content-header h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -116,7 +111,10 @@ export async function onRequest(context) {
 
 <header>
     <div class="container nav-box">
-        <h2>乡村振兴·助农前线</h2>
+        <div class="brand-row">
+            <button class="menu-toggle" id="menu-toggle" aria-label="打开分类菜单">☰</button>
+            <h2>乡村振兴·助农前线</h2>
+        </div>
         <nav>
             <ul class="nav-links">
                 <li><a href="/">首页</a></li>
@@ -147,12 +145,6 @@ export async function onRequest(context) {
     <!-- 右侧内容区 -->
     <main class="main-content">
         <div class="content-header">
-            <!-- 汉堡包按钮 -->
-            <button class="menu-toggle" id="menu-toggle" aria-label="打开分类菜单">
-                <div></div>
-                <div></div>
-                <div></div>
-            </button>
             <h1>${catName}</h1>
         </div>
         <div class="grid">
@@ -175,7 +167,6 @@ export async function onRequest(context) {
         function toggleMenu() {
             sidebar.classList.toggle('active');
             overlay.classList.toggle('active');
-            // 防止背景滚动
             document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
         }
 
