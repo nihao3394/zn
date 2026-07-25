@@ -326,8 +326,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             /* Modal 宽度自适应 */
             .modal-card { width: 95%; max-width: none; padding: 16px; }
 
-            /* Toast 强制绝对水平居中 */
-            .toast { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; top: auto !important; bottom: 24px !important; width: max-content !important; max-width: 90vw !important; text-align: center; margin: 0 auto; }
+            /* Toast 强制绝对水平居中及底部安全距离 */
+            .toast { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; top: auto !important; bottom: 30px !important; width: max-content !important; max-width: 90vw !important; text-align: center; margin: 0 auto; }
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
@@ -421,8 +421,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="wiki-trigger-zone" onclick="toggleWikiDrawer()"></div>
                 <!-- 侧边抽屉 -->
                 <div id="wiki-drawer-panel" class="wiki-drawer">
-                    <!-- 移动端专属的关闭按钮 -->
-                    <div class="wiki-drawer-close" onclick="closeWikiDrawer()">×</div>
                     <h4>提交新词条词条申请</h4>
                     <div class="form-group">
                         <label>您要提交的关键词：</label>
