@@ -20,6 +20,11 @@ export async function onRequestPost(context) {
         const now = new Date().toISOString();
         const newStatus = action === "submit" ? "pending" : article.status;
 
+        // 标签归一化（支持中英文逗号分隔）
+        let normalizedTags = [];
+        if (typeof tags === "string") {
+            normalizedTags = tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20);
+        }
         // 自动继承子类标签
         const catInfo = await db.prepare("SELECT tag FROM categories WHERE id = ?").bind(category_id).first();
         if (catInfo && catInfo.tag) {
@@ -30,11 +35,11 @@ export async function onRequestPost(context) {
             "UPDATE articles SET title = ?, content = ?, status = ?, category_id = ?, updated_at = ? WHERE id = ?"
         ).bind(title || article.title, content || article.content, newStatus, category_id || article.category_id, now, article_id).run();
 
-        if (tags !== undefined) {
+        // 重新写入标签
+        if (normalizedTags.length > 0) {
             await db.prepare("DELETE FROM article_tags WHERE article_id = ?").bind(article_id).run();
-            const tagArr = typeof tags === "string" ? tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20) : (Array.isArray(tags) ? tags.slice(0, 20) : []);
             const stmt = db.prepare("INSERT OR IGNORE INTO article_tags (article_id, tag) VALUES (?, ?)");
-            for (const t of tagArr) if (t) await stmt.bind(article_id, t).run();
+            for (const t of normalizedTags) if (t) await stmt.bind(article_id, t).run();
         }
 
         await userKV.put("system:mutation_version", String(Date.now()));
