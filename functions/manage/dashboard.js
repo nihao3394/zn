@@ -299,6 +299,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 max-width: 80vw;
                 height: 100vh;
                 overflow: hidden;
+                justify-content: flex-start;
                 z-index: 150;
                 transition: left 0.3s ease;
                 box-shadow: 4px 0 20px rgba(0,0,0,0.2);
@@ -310,6 +311,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             }
             .user-info-card {
                 flex-shrink: 0;
+                position: sticky;
+                bottom: 0;
+                z-index: 2;
             }
             .sidebar.open { left: 0; }
 
@@ -339,7 +343,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
-            .wiki-trigger-zone { width: 32px; background: rgba(46,125,50,0.08); border-radius: 6px 0 0 6px; }
+            .wiki-trigger-zone { width: var(--wiki-trigger-width, 32px); background: rgba(46,125,50,0.08); border-radius: 6px 0 0 6px; }
 
             /* 取消移动端的原生 hover 触发，避免触屏卡死，改为依靠类名控制 */
             .wiki-trigger-zone:hover + .wiki-drawer,
@@ -549,6 +553,13 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>维基百科提交侧边栏开关</span>
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
+                </div>
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                    <span>?????????</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
+                        <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
+                    </div>
                 </div>
                 <hr style="margin: 20px 0; border:none; border-top:1px solid var(--border-color);">
                 <h4 style="margin-bottom:16px;">安全设置</h4>
@@ -1355,6 +1366,27 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         // Tab 切换逻辑
+        // ???????????
+        function applyTriggerWidth(val) {
+            val = parseInt(val) || 32;
+            document.getElementById("trigger-width-label").innerText = val + "px";
+            document.documentElement.style.setProperty("--wiki-trigger-width", val + "px");
+            localStorage.setItem("wiki_trigger_width", val);
+        }
+
+        // ????????????
+        (function restoreTriggerWidth() {
+            const saved = localStorage.getItem("wiki_trigger_width");
+            if (saved) {
+                const val = parseInt(saved);
+                document.documentElement.style.setProperty("--wiki-trigger-width", val + "px");
+                const slider = document.getElementById("setting-trigger-width");
+                if (slider) { slider.value = val; }
+                const label = document.getElementById("trigger-width-label");
+                if (label) { label.innerText = val + "px"; }
+            }
+        })();
+
         function switchTab(tabKey) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
