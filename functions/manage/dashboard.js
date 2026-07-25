@@ -416,6 +416,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <li class="nav-item active" onclick="switchTab('wiki')">🌐 维基百科</li>
                 <li class="nav-item" onclick="switchTab('article-editor')">✏️ 文章撰写</li>
                 <li class="nav-item" onclick="switchTab('my-articles')">📋 我的文章</li>
+                <li class="nav-item" onclick="switchTab('chat-panel')">💬 留言面板</li>
                 <li class="nav-item role-admin-only" onclick="switchTab('user-audit')">📝 注册审核 <span id="user-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-article-reviewer-only" onclick="switchTab('article-audit')">📄 文章审核 <span id="article-pending-count" class="role-badge">0</span></li>
                 <li class="nav-item role-reviewer-only" onclick="switchTab('keyword-audit')">🔍 词条审核 <span id="kw-pending-count" class="role-badge">0</span></li>
@@ -531,9 +532,26 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             </div>
         </section>
 
-        <!-- 3.3. 我的文章面板 -->
+        <!-- 3.2. 我的文章面板 -->
         <section id="panel-my-articles" class="view-panel">
             <div id="my-articles-list"></div>
+        </section>
+
+        <!-- 3.3. 留言面板 -->
+        <section id="panel-chat" class="view-panel">
+            <div style="max-width:800px;margin:0 auto;display:flex;flex-direction:column;height:100%;">
+                <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
+                <div style="display:flex;gap:6px;align-items:center;position:relative;">
+                    <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;">@</button>
+                    <div id="at-dropdown" style="display:none;position:absolute;bottom:44px;left:0;width:220px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 0;"></div>
+                    <button id="chat-emo-btn" onclick="toggleEmoList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;">:)</button>
+                    <div id="emo-dropdown" style="display:none;position:absolute;bottom:44px;left:44px;width:320px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px;"></div>
+                    <button id="chat-type-btn" onclick="toggleTypeList()" style="background:#aaa;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:bold;min-width:28px;">T</button>
+                    <div id="type-dropdown" style="display:none;position:absolute;bottom:44px;left:88px;width:200px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 12px;"></div>
+                    <input type="text" id="chat-input" class="form-control" placeholder="输入留言..." maxlength="1000" onkeydown="if(event.keyCode===13){sendChat()}" style="flex:1;">
+                    <button class="btn btn-primary" onclick="sendChat()" style="padding:6px 16px;font-size:13px;">发送</button>
+                </div>
+            </div>
         </section>
 
         <!-- 3.4. 过审文章面板 -->
@@ -797,6 +815,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     // 版本变动 → 全量刷新当前面板
                     switch (currentTab) {
                         case 'user-audit':        loadUserAuditList(); break;
+                        case 'chat-panel':        loadChatMessages(); break;
                         case 'keyword-audit':     loadKeywordAuditList(); break;
                         case 'article-audit':     loadArticleAuditList(); break;
                         case 'my-articles':       loadMyArticles(); break;
@@ -821,6 +840,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         window.addEventListener('DOMContentLoaded', () => {
             applyRolePermissions();
             loadCategories();
+            loadChatMessages(); 
+            updateTypeBtn();
             loadUserAuditList();
             loadArticleAuditList();
             loadKeywordAuditList();
@@ -1411,6 +1432,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 'wiki': '维基百科镜像',
                 'article-editor': '文章撰写',
                 'my-articles': '我的文章',
+                'chat-panel': '留言面板',
                 'user-audit': '用户注册申请审核',
                 'article-audit': '文章审核',
                 'keyword-audit': '待审核词条管理',
@@ -1437,6 +1459,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             switch (tabKey) {
                 case 'user-audit': loadUserAuditList(); break;
                 case 'article-audit': loadArticleAuditList(); break;
+                case 'chat-panel': loadChatMessages(); break;
                 case 'keyword-audit': loadKeywordAuditList(); break;
                 case 'keyword-approved': loadKeywordApprovedList(); break;
                 case 'article-approved': loadArticleApprovedList(); break;
@@ -1767,6 +1790,127 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         function logout() { 
             document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/manage'; 
+        }
+
+        // ——— 留言面板 ———
+        let chatType = localStorage.getItem('chat_type') || 'chat';
+        const chatColors = { suggestion:'#c97d7d', question:'#7d9c7d', bug:'#7d8ca0', chat:'#aaa' };
+        const chatTypeNames = { suggestion:'建议：永久保留', question:'提问：永久保留', bug:'BUG反馈：保留1月', chat:'闲聊：保留1周' };
+        let chatUsers = [];
+
+        function updateTypeBtn() {
+            const btn = document.getElementById('chat-type-btn');
+            btn.style.background = chatColors[chatType];
+        }
+
+        function toggleAtList() {
+            const dd = document.getElementById('at-dropdown');
+            if (dd.style.display === 'none') {
+                dd.innerHTML = '<input type="text" id="at-search" class="form-control" placeholder="搜索用户名..." oninput="filterAtUsers()" style="margin:0 8px 8px;width:calc(100% - 16px);"><div id="at-user-list"></div>';
+                dd.style.display = 'block';
+                loadAtUsers();
+            } else { dd.style.display = 'none'; }
+        }
+
+        async function loadAtUsers(filter = '') {
+            if (chatUsers.length === 0) {
+                try {
+                    const res = await fetch('/api/admin/users', { method: 'GET', cache: 'no-store' });
+                    const data = await res.json();
+                    chatUsers = (data.list || []).map(u => u.username);
+                } catch(e) {}
+            }
+            const list = document.getElementById('at-user-list');
+            if (!list) return;
+            const filtered = filter ? chatUsers.filter(u => u.includes(filter)) : chatUsers;
+            list.innerHTML = '<div onclick="insertAt(\'@全体成员 \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
+                filtered.map(u => \`<div onclick="insertAt('@\${u} ')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@\${u}</div>\`).join('');
+        }
+
+        function filterAtUsers() {
+            loadAtUsers(document.getElementById('at-search')?.value || '');
+        }
+
+        function insertAt(text) {
+            const input = document.getElementById('chat-input');
+            input.value += text;
+            input.focus();
+            document.getElementById('at-dropdown').style.display = 'none';
+        }
+
+        async function toggleEmoList() {
+            const dd = document.getElementById('emo-dropdown');
+            if (dd.style.display === 'none') {
+                try {
+                    const res = await fetch('/api/chat/emoticons');
+                    const data = await res.json();
+                    const cats = data.list || [];
+                    let activeCat = cats[0]?.category || '';
+                    const renderEmo = (cat) => {
+                        const c = cats.find(x => x.category === cat);
+                        return (c?.items || []).map(i => \`<span onclick="insertEmo('${i.emoticon}')" title="\${i.name}" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background='#e8f5e9'" onmouseleave="this.style.background=''">\${i.emoticon}</span>\`).join('');
+                    };
+                    const render = () => {
+                        dd.innerHTML = \`<div style="min-height:100px;padding:4px;">\${renderEmo(activeCat)}</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">\${cats.map(c => \`<button onclick="event.stopPropagation();activeEmoCat='\${c.category}';toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:\${activeCat===c.category?'#e8f5e9':''}">\${c.category}</button>\`).join('')}</div>\`;
+                    };
+                    window.activeEmoCat = activeCat;
+                    render();
+                } catch(e) {}
+                dd.style.display = 'block';
+            } else { dd.style.display = 'none'; }
+        }
+
+        function insertEmo(emo) {
+            const input = document.getElementById('chat-input');
+            input.value += emo;
+            input.focus();
+        }
+
+        function toggleTypeList() {
+            const dd = document.getElementById('type-dropdown');
+            if (dd.style.display === 'none') {
+                dd.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:6px;">请选择重要度：</div>' +
+                    Object.entries(chatTypeNames).map(([k,v]) => \`<div onclick="setChatType('\${k}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:\${chatColors[k]};font-weight:\${k===chatType?'bold':''}">\${v}</div>\`).join('');
+                dd.style.display = 'block';
+            } else { dd.style.display = 'none'; }
+        }
+
+        function setChatType(type) {
+            chatType = type;
+            localStorage.setItem('chat_type', type);
+            updateTypeBtn();
+            document.getElementById('type-dropdown').style.display = 'none';
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const content = input.value.trim();
+            if (!content) return;
+            try {
+                const res = await fetch('/api/chat/send', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content, type: chatType })
+                });
+                const data = await res.json();
+                if (data.success) { input.value = ''; loadChatMessages(); }
+                else showToast(data.msg || '发送失败');
+            } catch(e) { showToast('发送失败'); }
+        }
+
+        async function loadChatMessages() {
+            const container = document.getElementById('chat-messages');
+            try {
+                const res = await fetch('/api/chat/list', { cache: 'no-store' });
+                const data = await res.json();
+                const msgs = data.list || [];
+                container.innerHTML = msgs.length === 0 ? '<p style="text-align:center;color:#999;">暂无留言</p>' :
+                    msgs.map(m => \`<div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;border-left:3px solid \${chatColors[m.type]};margin-bottom:4px;border-radius:0 6px 6px 0;background:#fff;">
+                        <span style="font-weight:600;font-size:13px;">\${m.user}</span>
+                        <span style="font-size:11px;color:#999;margin-left:8px;">\${new Date(m.timestamp).toLocaleTimeString()}</span>
+                        <div style="margin-top:4px;font-size:14px;">\${m.content}</div>
+                    </div>\`).join('');
+                container.scrollTop = container.scrollHeight;
+            } catch(e) {}
         }
     </script>
 </body>
