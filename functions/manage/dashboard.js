@@ -1807,6 +1807,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const dd = document.getElementById('at-dropdown');
             if (!dd) return;
             if (dd.style.display === 'none' || !dd.style.display) {
+                document.getElementById('emo-dropdown').style.display = 'none';
+                document.getElementById('type-dropdown').style.display = 'none';
                 dd.innerHTML = '<input type="text" id="at-search" class="form-control" placeholder="搜索用户名..." oninput="filterAtUsers()" style="margin:0 8px 8px;width:calc(100% - 16px);"><div id="at-user-list"></div>';
                 dd.style.display = 'block';
                 loadAtUsers();
@@ -1853,53 +1855,70 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const dd = document.getElementById('emo-dropdown');
             if (!dd) return;
             if (dd.style.display === 'none' || !dd.style.display) {
+                document.getElementById('at-dropdown').style.display = 'none';
+                document.getElementById('type-dropdown').style.display = 'none';
                 try {
                     const res = await fetch('/api/chat/emoticons');
                     if (!res.ok) return;
                     const data = await res.json();
                     const cats = data.list || [];
                     if (cats.length === 0) return;
-                    let activeCat = cats[0]?.category || '';
+                    window._emoCats = cats;
+                    window._activeEmoCat = cats[0]?.category || '';
                     
                     const renderEmo = (cat) => {
                         const c = cats.find(x => x.category === cat);
                         return (c?.items || []).map(i => '<span data-emo="' + (i.emoticon || '').replace(/"/g, '&quot;') + '" title="' + (i.name || '') + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\\'#e8f5e9\\'" onmouseleave="this.style.background=\\'\\'">' + i.emoticon + '</span>').join('');
                     };
 
-                    const render = () => {
+                    const renderCat = () => {
                         let catButtons = '';
                         for (let i = 0; i < cats.length; i++) {
                             const c = cats[i];
-                            const isSelected = activeCat === c.category ? '#e8f5e9' : '';
-                            catButtons += '<button onclick="event.stopPropagation(); window.activeEmoCat=\\'' + c.category + '\\'; toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
+                            const isSelected = window._activeEmoCat === c.category ? '#e8f5e9' : '';
+                            catButtons += '<button onclick="event.stopPropagation();swEmoCat(\\'' + c.category + '\\')" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
                         }
-                        dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(activeCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + catButtons + '</div>';
+                        dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(window._activeEmoCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + catButtons + '</div>';
                     };
 
-                    window.activeEmoCat = activeCat;
-                    render();
+                    renderCat();
                     
                     dd.onclick = function(e) { 
                         const span = e.target.closest('[data-emo]'); 
                         if (span) { 
                             const input = document.getElementById('chat-input'); 
-                            if (input) {
-                                input.value += span.getAttribute('data-emo'); 
-                                input.focus(); 
-                            }
+                            if (input) { input.value += span.getAttribute('data-emo'); input.focus(); }
                         } 
                     };
                 } catch(e) {}
                 dd.style.display = 'block';
-            } else { 
-                dd.style.display = 'none'; 
+            } else { dd.style.display = 'none'; }
+        }
+
+        function swEmoCat(cat) {
+            window._activeEmoCat = cat;
+            const dd = document.getElementById('emo-dropdown');
+            if (!dd || !window._emoCats) return;
+            const cats = window._emoCats;
+            const renderEmo = (cName) => {
+                const c = cats.find(x => x.category === cName);
+                return (c?.items || []).map(i => '<span data-emo="' + (i.emoticon || '').replace(/"/g, '&quot;') + '" title="' + (i.name || '') + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\\'#e8f5e9\\'" onmouseleave="this.style.background=\\'\\'">' + i.emoticon + '</span>').join('');
+            };
+            let catButtons = '';
+            for (let i = 0; i < cats.length; i++) {
+                const c = cats[i];
+                const isSelected = cat === c.category ? '#e8f5e9' : '';
+                catButtons += '<button onclick="event.stopPropagation();swEmoCat(\\'' + c.category + '\\')" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
             }
+            dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(cat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + catButtons + '</div>';
         }
 
         function toggleTypeList() {
             const dd = document.getElementById('type-dropdown');
             if (!dd) return;
             if (dd.style.display === 'none' || !dd.style.display) {
+                document.getElementById('at-dropdown').style.display = 'none';
+                document.getElementById('emo-dropdown').style.display = 'none';
                 let optionsHtml = '';
                 for (const [k, v] of Object.entries(chatTypeNames)) {
                     const fontWeight = k === chatType ? 'bold' : 'normal';
@@ -1972,6 +1991,19 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 container.scrollTop = container.scrollHeight;
             } catch(e) {}
         }
+
+        // 点击其他区域关闭所有下拉框
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#at-dropdown') && !e.target.closest('#chat-at-btn')) {
+                const ad = document.getElementById('at-dropdown'); if (ad) ad.style.display = 'none';
+            }
+            if (!e.target.closest('#emo-dropdown') && !e.target.closest('#chat-emo-btn')) {
+                const ed = document.getElementById('emo-dropdown'); if (ed) ed.style.display = 'none';
+            }
+            if (!e.target.closest('#type-dropdown') && !e.target.closest('#chat-type-btn')) {
+                const td = document.getElementById('type-dropdown'); if (td) td.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>

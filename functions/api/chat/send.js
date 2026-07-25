@@ -27,7 +27,7 @@ export async function onRequestPost(context) {
         if (lastTime && Date.now() - parseInt(lastTime) < 3000) {
             return Response.json({ success: false, msg: "发言过快，请3秒后再试" }, { status: 429 });
         }
-        await chatKV.put(rateKey, String(Date.now()), { expirationTtl: 10 });
+        await chatKV.put(rateKey, String(Date.now()), { expirationTtl: 60 });
 
         const msg = {
             id: crypto.randomUUID(),
