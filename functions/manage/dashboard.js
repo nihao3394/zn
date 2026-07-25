@@ -144,6 +144,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .view-panel { display: none; padding: 24px; height: calc(100dvh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
+        /* 留言面板使用 flex 布局以固定底部输入栏 */
+        #panel-chat-panel.view-panel { overflow: hidden; }
+        #panel-chat-panel.view-panel.active { display: flex; flex-direction: column; }
+
         /* 长条形圆角卡片 (X轴长，Y轴短) */
         .horizontal-card {
             background: white;
@@ -163,9 +167,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             box-shadow: 0 4px 12px rgba(46,125,50,0.12);
             border-color: var(--primary-light);
         }
-        .card-meta { display: flex; gap: 24px; align-items: center; text-align: left; }
-        .card-title { font-weight: 600; font-size: 15px; color: var(--text-main); text-align: left; }
-        .card-sub { font-size: 13px; color: var(--text-muted); text-align: left; }
+        .card-meta { display: flex; gap: 24px; align-items: center; }
+        .card-title { font-weight: 600; font-size: 15px; color: var(--text-main); }
+        .card-sub { font-size: 13px; color: var(--text-muted); }
 
         /* 维基百科嵌入与右侧抽屉 */
         .wiki-container { width: 100%; height: 100%; position: relative; overflow: hidden; }
@@ -382,7 +386,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         /* 文章编辑器容器 */
-        .editor-wrapper { max-width: 1000px; margin: 0 auto; }
+        .editor-wrapper { max-width: 900px; margin: 0 auto; }
         .editor-wrapper .form-group { margin-bottom: 14px; }
         .editor-wrapper .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
         .editor-wrapper input.form-control { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
@@ -1039,19 +1043,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                         'preview', 'fullscreen'
                     ],
                     cache: { enable: false },
-                    upload: {
-                        // 图片转 base64 内嵌到 Markdown 中，随文章存入 D1 数据库
-                        handler: (files) => {
-                            return new Promise((resolve) => {
-                                const file = files[0];
-                                if (!file) { resolve(''); return; }
-                                const reader = new FileReader();
-                                reader.onload = (e) => resolve(e.target.result);
-                                reader.onerror = () => { showToast('图片读取失败'); resolve(''); };
-                                reader.readAsDataURL(file);
-                            });
-                        }
-                    },
                     after: () => {
                         // 恢复localStorage草稿
                         const saved = localStorage.getItem('zn_draft');
