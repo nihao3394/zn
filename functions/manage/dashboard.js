@@ -607,14 +607,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <span>维基百科提交侧边栏开关</span>
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
                 </div>
-                <div class="form-group mobile-only-setting" style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="form-group mobile-only-setting">
                     <span>右侧边栏触发区域宽度</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
                         <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
                     </div>
                 </div>
-                <div class="form-group mobile-only-setting" style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="form-group mobile-only-setting">
                     <span>输入框高度</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
