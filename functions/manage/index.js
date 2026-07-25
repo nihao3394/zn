@@ -61,8 +61,9 @@ export async function renderAuthPage() {
               align-items:center; 
               justify-content:center; 
               color:#333; 
-              overflow:hidden;
+              overflow-x: hidden; /* 严防横向溢出 */
               position:relative;
+              width: 100%;
           }
 
           /* 左上角圆形几何体 */
