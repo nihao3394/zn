@@ -144,7 +144,9 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .view-panel { display: none; padding: 24px; height: calc(100vh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
-        /* 留言面板：overflow:hidden 防止 absolute 子元素溢出，高度由 .view-panel 提供 */
+        /* 留言面板使用 flex 布局以固定底部输入栏 */
+        #panel-chat-panel.view-panel { overflow: hidden; }
+        #panel-chat-panel.view-panel.active { display: flex; flex-direction: column; }
 
         /* 长条形圆角卡片 (X轴长，Y轴短) */
         .horizontal-card {
@@ -555,19 +557,19 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </section>
 
         <!-- 3.3. 留言面板 -->
-        <section id="panel-chat-panel" class="view-panel" style="position:relative;overflow:hidden;">
-            <!-- 消息滚动区：填充输入栏上方所有空间 -->
-            <div id="chat-messages" style="position:absolute;top:0;left:0;right:0;bottom:48px;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);"></div>
-            <!-- 输入栏：固定在底部 -->
-            <div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:6px;align-items:center;padding:0 0 8px 0;">
-                <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">@</button>
-                <div id="at-dropdown" style="display:none;position:absolute;bottom:44px;left:0;width:220px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 0;"></div>
-                <button id="chat-emo-btn" onclick="toggleEmoList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">:)</button>
-                <div id="emo-dropdown" style="display:none;position:absolute;bottom:44px;left:44px;width:320px;max-width:90vw;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px;"></div>
-                <button id="chat-type-btn" onclick="toggleTypeList()" style="background:#aaa;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:bold;min-width:28px;flex-shrink:0;">T</button>
-                <div id="type-dropdown" style="display:none;position:absolute;bottom:44px;left:88px;width:200px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 12px;"></div>
-                <input type="text" id="chat-input" class="form-control" placeholder="输入留言..." maxlength="1000" onkeydown="if(event.keyCode===13){sendChat()}" style="flex:1;min-width:0;">
-                <button class="btn btn-primary" onclick="sendChat()" style="padding:6px 16px;font-size:13px;flex-shrink:0;white-space:nowrap;">发送</button>
+        <section id="panel-chat-panel" class="view-panel">
+            <div style="flex:1;display:flex;flex-direction:column;min-height:0;max-width:800px;width:100%;margin:0 auto;">
+                <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
+                <div style="display:flex;gap:6px;align-items:center;position:relative;flex-shrink:0;padding-bottom:4px;">
+                    <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">@</button>
+                    <div id="at-dropdown" style="display:none;position:absolute;bottom:44px;left:0;width:220px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 0;"></div>
+                    <button id="chat-emo-btn" onclick="toggleEmoList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">:)</button>
+                    <div id="emo-dropdown" style="display:none;position:absolute;bottom:44px;left:44px;width:320px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px;"></div>
+                    <button id="chat-type-btn" onclick="toggleTypeList()" style="background:#aaa;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:bold;min-width:28px;flex-shrink:0;">T</button>
+                    <div id="type-dropdown" style="display:none;position:absolute;bottom:44px;left:88px;width:200px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 12px;"></div>
+                    <input type="text" id="chat-input" class="form-control" placeholder="输入留言..." maxlength="1000" onkeydown="if(event.keyCode===13){sendChat()}" style="flex:1;min-width:0;">
+                    <button class="btn btn-primary" onclick="sendChat()" style="padding:6px 16px;font-size:13px;flex-shrink:0;">发送</button>
+                </div>
             </div>
         </section>
 
