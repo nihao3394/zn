@@ -701,8 +701,12 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <input type="text" id="my-article-title-input" class="form-control">
             </div>
             <div class="form-group">
-                <label>正文（Markdown）</label>
+                <label style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>正文（Markdown）</span>
+                    <button type="button" class="btn btn-secondary" id="my-article-preview-btn" onclick="toggleMyArticlePreview()" style="padding:2px 10px;font-size:12px;">👁 预览</button>
+                </label>
                 <textarea id="my-article-content" class="form-control" rows="18" style="font-family:monospace;font-size:13px;"></textarea>
+                <div id="my-article-preview" style="display:none;min-height:300px;padding:12px;border:1px solid var(--border-color);border-radius:6px;font-size:14px;line-height:1.8;overflow-y:auto;max-height:60dvh;background:#fafdfa;"></div>
             </div>
             <div class="form-group">
                 <label>标签（逗号分隔）</label>
@@ -1299,8 +1303,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 document.getElementById('my-article-title-display').innerText = article.title;
                 document.getElementById('my-article-title-input').value = article.title;
                 
-                // 【修复核心】增加容错处理：确保 content 存在，如果为 null/undefined 则回退为空字符串
-                document.getElementById('my-article-content').value = article.content || '';
+                // 填充正文到 textarea 和预览区
+                const rawContent = article.content || '';
+                document.getElementById('my-article-content').value = rawContent;
+                document.getElementById('my-article-preview').innerHTML = marked.parse(rawContent);
+                // 确保打开弹窗时回到编辑模式
+                document.getElementById('my-article-content').style.display = '';
+                document.getElementById('my-article-preview').style.display = 'none';
+                document.getElementById('my-article-preview-btn').innerText = '👁 预览';
                 
                 document.getElementById('my-article-tags').value = (article.tags || []).join(',');
                 document.getElementById('my-article-status').innerText = {draft:'草稿',pending:'待审核',approved:'已发布',rejected:'已驳回'}[article.status] || article.status;
@@ -1374,6 +1384,27 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     loadMyArticles();
                 } else { showToast(data.msg || '删除失败'); }
             } catch (e) { showToast('操作失败'); }
+        }
+
+        // ——— 我的文章：编辑/预览切换 ———
+        function toggleMyArticlePreview() {
+            const textarea = document.getElementById('my-article-content');
+            const preview = document.getElementById('my-article-preview');
+            const btn = document.getElementById('my-article-preview-btn');
+            if (!textarea || !preview) return;
+
+            if (preview.style.display === 'none') {
+                // 切换到预览模式：渲染 textarea 中的 Markdown
+                preview.innerHTML = marked.parse(textarea.value || '');
+                textarea.style.display = 'none';
+                preview.style.display = '';
+                btn.innerText = '✏️ 编辑';
+            } else {
+                // 切换回编辑模式
+                preview.style.display = 'none';
+                textarea.style.display = '';
+                btn.innerText = '👁 预览';
+            }
         }
 
         let approvedArticleContent = '';
