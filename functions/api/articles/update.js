@@ -26,9 +26,10 @@ export async function onRequestPost(context) {
             normalizedTags = tags.replace(/，/g, ",").split(",").map(t => t.trim()).filter(Boolean).slice(0, 20);
         }
         // 自动继承子类标签
-        const catInfo = await db.prepare("SELECT tag FROM categories WHERE id = ?").bind(category_id).first();
-        if (catInfo && catInfo.tag) {
-            if (!normalizedTags.includes(catInfo.tag)) normalizedTags.push(catInfo.tag);
+        const catInfo = await db.prepare("SELECT name, tag FROM categories WHERE id = ?").bind(category_id).first();
+        if (catInfo) {
+            const categoryTag = catInfo.tag || catInfo.name;
+            if (categoryTag && !normalizedTags.includes(categoryTag)) normalizedTags.push(categoryTag);
         }
 
         await db.prepare(
