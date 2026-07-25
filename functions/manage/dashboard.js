@@ -1800,24 +1800,29 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         function updateTypeBtn() {
             const btn = document.getElementById('chat-type-btn');
-            btn.style.background = chatColors[chatType];
+            if (btn) btn.style.background = chatColors[chatType] || '#aaa';
         }
 
         function toggleAtList() {
             const dd = document.getElementById('at-dropdown');
-            if (dd.style.display === 'none') {
+            if (!dd) return;
+            if (dd.style.display === 'none' || !dd.style.display) {
                 dd.innerHTML = '<input type="text" id="at-search" class="form-control" placeholder="搜索用户名..." oninput="filterAtUsers()" style="margin:0 8px 8px;width:calc(100% - 16px);"><div id="at-user-list"></div>';
                 dd.style.display = 'block';
                 loadAtUsers();
-            } else { dd.style.display = 'none'; }
+            } else { 
+                dd.style.display = 'none'; 
+            }
         }
 
         async function loadAtUsers(filter = '') {
             if (chatUsers.length === 0) {
                 try {
                     const res = await fetch('/api/admin/users', { method: 'GET', cache: 'no-store' });
-                    const data = await res.json();
-                    chatUsers = (data.list || []).map(u => u.username);
+                    if (res.ok) {
+                        const data = await res.json();
+                        chatUsers = (data.list || []).map(u => u.username);
+                    }
                 } catch(e) {
                     chatUsers = [];
                 }
@@ -1826,92 +1831,152 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             if (!list) return;
             const filtered = filter ? chatUsers.filter(u => u.includes(filter)) : chatUsers;
             list.innerHTML = '<div onclick="insertAt(\'@全体成员 \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
-            filtered.map(u => '<div onclick="insertAt(\'@' + u + ' \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@' + u + '</div>').join('');
+                filtered.map(u => '<div onclick="insertAt(\'@' + u + ' \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@' + u + '</div>').join('');
         }
 
         function filterAtUsers() {
-            loadAtUsers(document.getElementById('at-search')?.value || '');
+            const searchInput = document.getElementById('at-search');
+            loadAtUsers(searchInput ? searchInput.value : '');
         }
 
         function insertAt(text) {
             const input = document.getElementById('chat-input');
-            input.value += text;
-            input.focus();
-            document.getElementById('at-dropdown').style.display = 'none';
+            if (input) {
+                input.value += text;
+                input.focus();
+            }
+            const dd = document.getElementById('at-dropdown');
+            if (dd) dd.style.display = 'none';
         }
 
         async function toggleEmoList() {
             const dd = document.getElementById('emo-dropdown');
-            if (dd.style.display === 'none') {
+            if (!dd) return;
+            if (dd.style.display === 'none' || !dd.style.display) {
                 try {
                     const res = await fetch('/api/chat/emoticons');
+                    if (!res.ok) return;
                     const data = await res.json();
                     const cats = data.list || [];
+                    if (cats.length === 0) return;
                     let activeCat = cats[0]?.category || '';
+                    
                     const renderEmo = (cat) => {
                         const c = cats.find(x => x.category === cat);
-                        return (c?.items || []).map(i => '<span data-emo="' + i.emoticon.replace(/"/g, '&quot;') + '" title="' + i.name + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\'#e8f5e9\'" onmouseleave="this.style.background=\'\'">' + i.emoticon + '</span>').join('');
+                        return (c?.items || []).map(i => '<span data-emo="' + (i.emoticon || '').replace(/"/g, '&quot;') + '" title="' + (i.name || '') + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\'#e8f5e9\'" onmouseleave="this.style.background=\'\'">' + i.emoticon + '</span>').join('');
                     };
+
                     const render = () => {
-                        dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(activeCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + cats.map(c => '<button onclick="event.stopPropagation();activeEmoCat=\'' + c.category + '\';toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + (activeCat === c.category ? '#e8f5e9' : '') + '">' + c.category + '</button>').join('') + '</div>';
+                        let catButtons = '';
+                        for (let i = 0; i < cats.length; i++) {
+                            const c = cats[i];
+                            const isSelected = activeCat === c.category ? '#e8f5e9' : '';
+                            catButtons += '<button onclick="event.stopPropagation(); window.activeEmoCat=\'' + c.category + '\'; toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
+                        }
+                        dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(activeCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + catButtons + '</div>';
                     };
+
                     window.activeEmoCat = activeCat;
                     render();
-                    dd.onclick = function(e) { const span = e.target.closest('[data-emo]'); if(span) { const input = document.getElementById('chat-input'); input.value += span.getAttribute('data-emo'); input.focus(); } };
+                    
+                    dd.onclick = function(e) { 
+                        const span = e.target.closest('[data-emo]'); 
+                        if (span) { 
+                            const input = document.getElementById('chat-input'); 
+                            if (input) {
+                                input.value += span.getAttribute('data-emo'); 
+                                input.focus(); 
+                            }
+                        } 
+                    };
                 } catch(e) {}
                 dd.style.display = 'block';
-            } else { dd.style.display = 'none'; }
+            } else { 
+                dd.style.display = 'none'; 
+            }
         }
 
         function insertEmo(emo) {
             const input = document.getElementById('chat-input');
-            input.value += emo;
-            input.focus();
+            if (input) {
+                input.value += emo;
+                input.focus();
+            }
         }
 
         function toggleTypeList() {
             const dd = document.getElementById('type-dropdown');
-            if (dd.style.display === 'none') {
-                dd.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:6px;">请选择重要度：</div>' +
-                    Object.entries(chatTypeNames).map(([k,v]) => '<div onclick="setChatType(\'' + k + '\')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:' + chatColors[k] + ';font-weight:' + (k === chatType ? 'bold' : '') + '">' + v + '</div>').join('');
+            if (!dd) return;
+            if (dd.style.display === 'none' || !dd.style.display) {
+                let optionsHtml = '';
+                for (const [k, v] of Object.entries(chatTypeNames)) {
+                    const fontWeight = k === chatType ? 'bold' : 'normal';
+                    optionsHtml += '<div onclick="setChatType(\'' + k + '\')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:' + chatColors[k] + ';font-weight:' + fontWeight + '">' + v + '</div>';
+                }
+                dd.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:6px;">请选择重要度：</div>' + optionsHtml;
                 dd.style.display = 'block';
-            } else { dd.style.display = 'none'; }
+            } else { 
+                dd.style.display = 'none'; 
+            }
         }
 
         function setChatType(type) {
             chatType = type;
             localStorage.setItem('chat_type', type);
             updateTypeBtn();
-            document.getElementById('type-dropdown').style.display = 'none';
+            const dd = document.getElementById('type-dropdown');
+            if (dd) dd.style.display = 'none';
         }
 
         async function sendChat() {
             const input = document.getElementById('chat-input');
+            if (!input) return;
             const content = input.value.trim();
             if (!content) return;
             try {
                 const res = await fetch('/api/chat/send', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ content, type: chatType })
                 });
                 const data = await res.json();
-                if (data.success) { input.value = ''; loadChatMessages(); }
-                else showToast(data.msg || '发送失败');
-            } catch(e) { showToast('发送失败'); }
+                if (data.success) { 
+                    input.value = ''; 
+                    loadChatMessages(); 
+                } else {
+                    if (typeof showToast === 'function') showToast(data.msg || '发送失败');
+                }
+            } catch(e) { 
+                if (typeof showToast === 'function') showToast('发送失败'); 
+            }
         }
 
         async function loadChatMessages() {
             const container = document.getElementById('chat-messages');
+            if (!container) return;
             try {
                 const res = await fetch('/api/chat/list', { cache: 'no-store' });
+                if (!res.ok) return;
                 const data = await res.json();
                 const msgs = data.list || [];
-                container.innerHTML = msgs.length === 0 ? '<p style="text-align:center;color:#999;">暂无留言</p>' :
-                    msgs.map(m => '<div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;border-left:3px solid ' + chatColors[m.type] + ';margin-bottom:4px;border-radius:0 6px 6px 0;background:#fff;">' +
-                        '<span style="font-weight:600;font-size:13px;">' + m.user + '</span>' +
-                        '<span style="font-size:11px;color:#999;margin-left:8px;">' + new Date(m.timestamp).toLocaleTimeString() + '</span>' +
-                        '<div style="margin-top:4px;font-size:14px;">' + m.content + '</div>' +
-                    '</div>').join('');
+                
+                if (msgs.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">暂无留言</p>';
+                    return;
+                }
+
+                let html = '';
+                for (let i = 0; i < msgs.length; i++) {
+                    const m = msgs[i];
+                    const borderColor = chatColors[m.type] || '#aaa';
+                    const timeStr = m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : '';
+                    html += '<div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;border-left:3px solid ' + borderColor + ';margin-bottom:4px;border-radius:0 6px 6px 0;background:#fff;">' +
+                        '<span style="font-weight:600;font-size:13px;">' + (m.user || '未知用户') + '</span>' +
+                        '<span style="font-size:11px;color:#999;margin-left:8px;">' + timeStr + '</span>' +
+                        '<div style="margin-top:4px;font-size:14px;">' + (m.content || '') + '</div>' +
+                    '</div>';
+                }
+                container.innerHTML = html;
                 container.scrollTop = container.scrollHeight;
             } catch(e) {}
         }
