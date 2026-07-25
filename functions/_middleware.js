@@ -116,7 +116,7 @@ function getGateHtml() {
         <title>Knowledge Gateway</title>
         <style>
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { height:100dvh; font-family:"Helvetica Neue",Arial,sans-serif; background:#f1f8f1; display:flex; align-items:center; justify-content:center; color:#333; overflow-x: hidden; width: 100%; }
+            body { height:100dvh; font-family:"Helvetica Neue",Arial,sans-serif; background:#f1f8f1; display:flex; align-items:center; justify-content:center; color:#333; overflow: hidden; }
             body::before { content:""; position:absolute; width:400px; height:400px; background:#a5d6a7; border-radius:50%; top:-120px; left:-120px; opacity:.35; }
             body::after { content:""; position:absolute; width:350px; height:350px; background:#81c784; border-radius:20%; bottom:-100px; right:-100px; transform:rotate(30deg); opacity:.25; }
             .container { position:relative; width:90%; max-width:420px; z-index:10; }
@@ -125,7 +125,8 @@ function getGateHtml() {
             h1 { color:#2e7d32; font-size:28px; margin-bottom:10px; }
             input { width:100%; padding:14px; border:1px solid #ccc; border-radius:8px; font-size:16px; outline:none; }
             input:focus { border-color:#2e7d32; }
-            button { margin-top:20px; width:100%; padding:14px; border:none; border-radius:8px; background:#2e7d32; color:white; font-size:16px; cursor:pointer; transition:background .3s; }
+            button { margin-top:20px; width:100%; padding:14px; border:none; border-radius:8px; background:#2e7d32; color:white; font-size:16px; cursor:pointer; transition:.3s; }
+            button:hover { background:#1b5e20; }
             .footer { margin-top:25px; font-size:12px; color:#777; }
             #msg-box { margin-top: 15px; font-size: 14px; min-height: 20px; }
 
