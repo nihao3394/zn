@@ -1478,11 +1478,34 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         function closeDrawer() {
             const drawer = document.getElementById('wiki-drawer-panel');
-            drawer.style.right = '-360px';
-            if (document.activeElement) document.activeElement.blur();
-            // 清除 force-open 状态
-            drawer.classList.remove('force-open');
-            setTimeout(() => { drawer.style.right = ''; }, 300);
+            const trigger = document.querySelector('.wiki-trigger-zone');
+            
+            if (window.innerWidth <= 768) {
+                // 移动端：通过移除类名来收回抽屉，响应空白区域与取消按钮点击
+                drawer.classList.remove('open');
+                if (trigger) trigger.classList.remove('active');
+            } else {
+                // PC端：通过内联样式强制收回
+                drawer.style.right = '-360px';
+                if (document.activeElement) document.activeElement.blur();
+                drawer.classList.remove('force-open');
+                setTimeout(() => { drawer.style.right = ''; }, 300);
+            }
+        }
+
+        // 实现点击右侧边栏触发区的反馈逻辑
+        function toggleWikiDrawer() {
+            const drawer = document.getElementById('wiki-drawer-panel');
+            const trigger = document.querySelector('.wiki-trigger-zone');
+            if (window.innerWidth <= 768) {
+                drawer.classList.toggle('open');
+                if (trigger) trigger.classList.toggle('active');
+            }
+        }
+
+        // 实现移动端专属的 × 按钮关闭逻辑
+        function closeWikiDrawer() {
+            closeDrawer();
         }
 
         async function loadKeywordAuditList() {
