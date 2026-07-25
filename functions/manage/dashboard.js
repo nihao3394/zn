@@ -1848,7 +1848,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     let activeCat = cats[0]?.category || '';
                     const renderEmo = (cat) => {
                         const c = cats.find(x => x.category === cat);
-                        return (c?.items || []).map(i => \`<span onclick="insertEmo('${i.emoticon}')" title="\${i.name}" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background='#e8f5e9'" onmouseleave="this.style.background=''">\${i.emoticon}</span>\`).join('');
+                        return (c?.items || []).map(i => \`<span onclick="insertEmo('\${i.emoticon}')" title="\${i.name}" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background='#e8f5e9'" onmouseleave="this.style.background=''">\${i.emoticon}</span>\`).join('');
                     };
                     const render = () => {
                         dd.innerHTML = \`<div style="min-height:100px;padding:4px;">\${renderEmo(activeCat)}</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">\${cats.map(c => \`<button onclick="event.stopPropagation();activeEmoCat='\${c.category}';toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:\${activeCat===c.category?'#e8f5e9':''}">\${c.category}</button>\`).join('')}</div>\`;
