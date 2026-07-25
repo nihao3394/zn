@@ -1024,7 +1024,15 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             msgBox.style.color = '#666';
             msgBox.innerText = action === 'draft' ? '正在保存...' : '正在提交审核...';
 
-            const payload = { title, content, category_id: selectedSubId, tags: articleTags.join(","), action };
+            // ???????????????????????Enter???????
+            const tagInputVal = document.getElementById("tag-input").value.trim();
+            const allTags = [...articleTags];
+            if (tagInputVal) {
+                tagInputVal.replace(/[\uff0c]/g, ",").split(",").map(t => t.trim()).filter(Boolean).forEach(t => {
+                    if (!allTags.includes(t)) allTags.push(t);
+                });
+            }
+            const payload = { title, content, category_id: selectedSubId, tags: allTags.join(","), action };
             
             // 只要当前有已创建的 currentArticleId，无论什么 action 都视为更新
             // 尝试从 localStorage 恢复 articleId（防止刷新后丢失）
