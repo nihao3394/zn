@@ -63,6 +63,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             --danger: #c62828;
             --danger-hover: #b71c1c;
             --sidebar-width: 240px;
+            --input-height: 32px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -203,6 +204,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 通用表单与按钮 */
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="url"],
+        .form-group select {
+            height: var(--input-height);
+            box-sizing: border-box;
+        }
+
         .form-control {
             width: 100%;
             padding: 10px 14px;
@@ -337,6 +346,12 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .top-header { padding: 0 10px; height: 48px; display: flex; align-items: center; }
             .top-header h3 { font-size: 14px; flex: 1; }
             .view-panel { padding: 12px; height: calc(100vh - 48px); }
+
+            .message-panel {
+                position: absolute;
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+            }
 
             /* 卡片在手机上堆叠 */
             .horizontal-card {
@@ -593,6 +608,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
                         <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
+                        <div class="setting-row">
+                            <label>输入框高度</label>
+                            <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
+                            <span id="input-height-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
+                        </div>
                     </div>
                 </div>
                 <hr style="margin: 20px 0; border:none; border-top:1px solid var(--border-color);">
@@ -1418,6 +1438,24 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 if (slider) { slider.value = val; }
                 const label = document.getElementById("trigger-width-label");
                 if (label) { label.innerText = val + "px"; }
+
+                function applyInputHeight(val) {
+                    document.documentElement.style.setProperty('--input-height', val + 'px');
+                    const label = document.getElementById("input-height-label");
+                    if (label) { label.innerText = val + "px"; }
+                    localStorage.setItem('pref_input_height', val);
+                }
+
+                function restoreInputHeight() {
+                    const saved = localStorage.getItem('pref_input_height');
+                    if (saved) {
+                        document.documentElement.style.setProperty('--input-height', saved + 'px');
+                        const slider = document.getElementById("setting-input-height");
+                        const label = document.getElementById("input-height-label");
+                        if (slider) slider.value = saved;
+                        if (label) label.innerText = saved + "px";
+                    }
+                }
             }
         })();
 
