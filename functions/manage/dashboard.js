@@ -1830,8 +1830,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const list = document.getElementById('at-user-list');
             if (!list) return;
             const filtered = filter ? chatUsers.filter(u => u.includes(filter)) : chatUsers;
-            list.innerHTML = '<div onclick="insertAt(\'@全体成员 \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
-                filtered.map(u => '<div onclick="insertAt(\'@' + u + ' \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@' + u + '</div>').join('');
+            list.innerHTML = '<div onclick="insertAt(\\'@全体成员 \\')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
+                filtered.map(u => '<div onclick="insertAt(\\'@' + u + ' \\')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@' + u + '</div>').join('');
         }
 
         function filterAtUsers() {
@@ -1863,7 +1863,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     
                     const renderEmo = (cat) => {
                         const c = cats.find(x => x.category === cat);
-                        return (c?.items || []).map(i => '<span data-emo="' + (i.emoticon || '').replace(/"/g, '&quot;') + '" title="' + (i.name || '') + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\'#e8f5e9\'" onmouseleave="this.style.background=\'\'">' + i.emoticon + '</span>').join('');
+                        return (c?.items || []).map(i => '<span data-emo="' + (i.emoticon || '').replace(/"/g, '&quot;') + '" title="' + (i.name || '') + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\\'#e8f5e9\\'" onmouseleave="this.style.background=\\'\\'">' + i.emoticon + '</span>').join('');
                     };
 
                     const render = () => {
@@ -1871,7 +1871,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                         for (let i = 0; i < cats.length; i++) {
                             const c = cats[i];
                             const isSelected = activeCat === c.category ? '#e8f5e9' : '';
-                            catButtons += '<button onclick="event.stopPropagation(); window.activeEmoCat=\'' + c.category + '\'; toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
+                            catButtons += '<button onclick="event.stopPropagation(); window.activeEmoCat=\\'' + c.category + '\\'; toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + isSelected + '">' + c.category + '</button>';
                         }
                         dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(activeCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + catButtons + '</div>';
                     };
@@ -1903,7 +1903,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 let optionsHtml = '';
                 for (const [k, v] of Object.entries(chatTypeNames)) {
                     const fontWeight = k === chatType ? 'bold' : 'normal';
-                    optionsHtml += '<div onclick="setChatType(\'' + k + '\')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:' + chatColors[k] + ';font-weight:' + fontWeight + '">' + v + '</div>';
+                    optionsHtml += '<div onclick="setChatType(\\'' + k + '\\')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:' + chatColors[k] + ';font-weight:' + fontWeight + '">' + v + '</div>';
                 }
                 dd.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:6px;">请选择重要度：</div>' + optionsHtml;
                 dd.style.display = 'block';
