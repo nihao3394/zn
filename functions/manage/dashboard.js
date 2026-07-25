@@ -557,7 +557,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
                 </div>
                 <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-                    <span>?????????</span>
+                    <span>右侧边栏触发区域宽度</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
                         <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
@@ -1037,7 +1037,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             msgBox.style.color = '#666';
             msgBox.innerText = action === 'draft' ? '正在保存...' : '正在提交审核...';
 
-            // ???????????????????????Enter???????
             const tagInputVal = document.getElementById("tag-input").value.trim();
             const allTags = [...articleTags];
             if (tagInputVal) {
@@ -1368,7 +1367,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         // Tab 切换逻辑
-        // ???????????
         function applyTriggerWidth(val) {
             val = parseInt(val) || 32;
             document.getElementById("trigger-width-label").innerText = val + "px";
@@ -1376,7 +1374,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             localStorage.setItem("wiki_trigger_width", val);
         }
 
-        // ????????????
         (function restoreTriggerWidth() {
             const saved = localStorage.getItem("wiki_trigger_width");
             if (saved) {
