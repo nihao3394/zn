@@ -259,6 +259,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         /* 侧边栏拖拽调节手柄 */
         .sidebar-resize-handle {
+            display: none;
             position: absolute;
             top: 0;
             right: -4px;           /* 跨在边框上 */
@@ -289,7 +290,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 移动端适配 */
         @media (max-width: 768px) {
             .hamburger { display: flex; align-items: center; justify-content: center; margin-right: 6px; }
-            .sidebar-resize-handle { display: none; }
+            .sidebar-resize-handle { display: block; }
 
             .sidebar {
                 position: fixed;
