@@ -1,5 +1,11 @@
 config.js
+wiki/config.js
+products/config.js
+about/config.js
+
 wiki/wiki_proxy.js
+
+wrangler.toml
 
 gate.html
 
