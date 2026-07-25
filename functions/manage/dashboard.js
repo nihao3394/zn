@@ -298,10 +298,18 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 min-width: 260px;
                 max-width: 80vw;
                 height: 100vh;
-                overflow-y: auto;
+                overflow: hidden;
                 z-index: 150;
                 transition: left 0.3s ease;
                 box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+            }
+            .sidebar > div:first-child {
+                flex: 1;
+                overflow-y: auto;
+                min-height: 0;
+            }
+            .user-info-card {
+                flex-shrink: 0;
             }
             .sidebar.open { left: 0; }
 
