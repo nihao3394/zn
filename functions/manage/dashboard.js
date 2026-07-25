@@ -326,8 +326,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             /* Modal 宽度自适应 */
             .modal-card { width: 95%; max-width: none; padding: 16px; }
 
-            /* Toast 不超出屏幕 */
-            .toast { left: 8px; right: 8px; top: auto; bottom: 16px; width: auto; text-align: center; }
+            /* Toast 不超出屏幕且绝对水平居中 */
+            .toast { left: 50%; right: auto; transform: translateX(-50%); top: auto; bottom: 24px; width: max-content; max-width: 90vw; text-align: center; }
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
