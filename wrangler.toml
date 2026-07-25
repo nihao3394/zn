@@ -15,6 +15,10 @@ id = "02734951516748b396f8b910171e4a48"
 binding = "WIKI_DB"
 id = "07843a69e4794a638dc2c8202cf8a9f8"
 
+[[kv_namespaces]]
+binding = "CHATTING_DB"
+id = "722117dfb1b04fa6ba455637fa9bb402"
+
 # === D1 数据库 ===
 [[d1_databases]]
 binding = "ARTICLE_DB"
