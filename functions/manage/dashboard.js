@@ -1818,13 +1818,15 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     const res = await fetch('/api/admin/users', { method: 'GET', cache: 'no-store' });
                     const data = await res.json();
                     chatUsers = (data.list || []).map(u => u.username);
-                } catch(e) {}
+                } catch(e) {
+                    chatUsers = [];
+                }
             }
             const list = document.getElementById('at-user-list');
             if (!list) return;
             const filtered = filter ? chatUsers.filter(u => u.includes(filter)) : chatUsers;
-            list.innerHTML = '<div onclick="insertAt(\'@全体成员\')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
-                filtered.map(u => \`<div onclick="insertAt(\' @${u} \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@${u}</div>\`).join('');
+            list.innerHTML = '<div onclick="insertAt(\'@全体成员 \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
+            filtered.map(u => '<div onclick="insertAt(\'@' + u + ' \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@' + u + '</div>').join('');
         }
 
         function filterAtUsers() {
@@ -1848,10 +1850,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     let activeCat = cats[0]?.category || '';
                     const renderEmo = (cat) => {
                         const c = cats.find(x => x.category === cat);
-                        return (c?.items || []).map(i => \`<span data-emo="\${i.emoticon.replace(/"/g,'&quot;')}" title="\${i.name}" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background='#e8f5e9'" onmouseleave="this.style.background=''">\${i.emoticon}</span>\`).join('');
+                        return (c?.items || []).map(i => '<span data-emo="' + i.emoticon.replace(/"/g, '&quot;') + '" title="' + i.name + '" style="display:inline-block;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:15px;" onmouseenter="this.style.background=\'#e8f5e9\'" onmouseleave="this.style.background=\'\'">' + i.emoticon + '</span>').join('');
                     };
                     const render = () => {
-                        dd.innerHTML = \`<div style="min-height:100px;padding:4px;">\${renderEmo(activeCat)}</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">\${cats.map(c => \`<button onclick="event.stopPropagation();activeEmoCat='\${c.category}';toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:\${activeCat===c.category?'#e8f5e9':''}">\${c.category}</button>\`).join('')}</div>\`;
+                        dd.innerHTML = '<div style="min-height:100px;padding:4px;">' + renderEmo(activeCat) + '</div><div style="display:flex;gap:4px;border-top:1px solid #eee;padding-top:6px;overflow-x:auto;">' + cats.map(c => '<button onclick="event.stopPropagation();activeEmoCat=\'' + c.category + '\';toggleEmoList();" style="white-space:nowrap;padding:3px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;cursor:pointer;background:' + (activeCat === c.category ? '#e8f5e9' : '') + '">' + c.category + '</button>').join('') + '</div>';
                     };
                     window.activeEmoCat = activeCat;
                     render();
@@ -1871,7 +1873,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const dd = document.getElementById('type-dropdown');
             if (dd.style.display === 'none') {
                 dd.innerHTML = '<div style="font-size:12px;color:#999;margin-bottom:6px;">请选择重要度：</div>' +
-                    Object.entries(chatTypeNames).map(([k,v]) => \`<div onclick="setChatType('\${k}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:\${chatColors[k]};font-weight:\${k===chatType?'bold':''}">\${v}</div>\`).join('');
+                    Object.entries(chatTypeNames).map(([k,v]) => '<div onclick="setChatType(\'' + k + '\')" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:' + chatColors[k] + ';font-weight:' + (k === chatType ? 'bold' : '') + '">' + v + '</div>').join('');
                 dd.style.display = 'block';
             } else { dd.style.display = 'none'; }
         }
@@ -1905,11 +1907,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 const data = await res.json();
                 const msgs = data.list || [];
                 container.innerHTML = msgs.length === 0 ? '<p style="text-align:center;color:#999;">暂无留言</p>' :
-                    msgs.map(m => \`<div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;border-left:3px solid \${chatColors[m.type]};margin-bottom:4px;border-radius:0 6px 6px 0;background:#fff;">
-                        <span style="font-weight:600;font-size:13px;">\${m.user}</span>
-                        <span style="font-size:11px;color:#999;margin-left:8px;">\${new Date(m.timestamp).toLocaleTimeString()}</span>
-                        <div style="margin-top:4px;font-size:14px;">\${m.content}</div>
-                    </div>\`).join('');
+                    msgs.map(m => '<div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;border-left:3px solid ' + chatColors[m.type] + ';margin-bottom:4px;border-radius:0 6px 6px 0;background:#fff;">' +
+                        '<span style="font-weight:600;font-size:13px;">' + m.user + '</span>' +
+                        '<span style="font-size:11px;color:#999;margin-left:8px;">' + new Date(m.timestamp).toLocaleTimeString() + '</span>' +
+                        '<div style="margin-top:4px;font-size:14px;">' + m.content + '</div>' +
+                    '</div>').join('');
                 container.scrollTop = container.scrollHeight;
             } catch(e) {}
         }
