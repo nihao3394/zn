@@ -351,12 +351,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .top-header h3 { font-size: 14px; flex: 1; }
             .view-panel { padding: 12px; height: calc(100dvh - 48px); }
 
-            .message-panel {
-                position: absolute;
-                max-height: calc(100dvh - 80px);
-                overflow-y: auto;
-            }
-
             /* 卡片在手机上堆叠 */
             .horizontal-card {
                 flex-direction: column;
