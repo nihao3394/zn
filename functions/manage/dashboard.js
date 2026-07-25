@@ -298,7 +298,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 min-width: 260px;
                 max-width: 80vw;
                 height: 100vh;
-                overflow: hidden;
+                overflow: visible;
                 justify-content: flex-start;
                 z-index: 150;
                 transition: left 0.3s ease;
@@ -314,6 +314,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 position: sticky;
                 bottom: 0;
                 z-index: 2;
+                background: #fafdfa;
+                margin-top: auto;
             }
             .sidebar.open { left: 0; }
 
