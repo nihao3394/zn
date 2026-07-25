@@ -370,7 +370,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .wiki-drawer:focus-within { right: 0 !important; }
 
             .horizontal-card { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; }
-            .mobile-only-setting { display: block; }
         }
 
         /* 文章编辑器容器 */
@@ -399,9 +398,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         /* Vditor 容器 */
         #vditor-container { min-height: 400px; border: 1px solid var(--border-color); border-radius: 6px; }
-
-        /* 仅手机端可见的设置项 */
-        .mobile-only-setting { display: none; }
 
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -543,7 +539,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         <!-- 3.3. 留言面板 -->
         <section id="panel-chat-panel" class="view-panel" style="position:relative;">
-            <div style="position:absolute;top:12px;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:800px;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:12px;bottom:12px;left:12px;right:12px;max-width:800px;margin:0 auto;display:flex;flex-direction:column;">
                 <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
                 <div style="display:flex;gap:6px;align-items:center;position:relative;flex-shrink:0;">
                     <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">@</button>
@@ -597,13 +593,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
                         <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
-                    </div>
-                </div>
-                <div class="form-group mobile-only-setting">
-                    <span>留言输入框高度</span>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="range" id="setting-chat-input-height" min="36" max="120" value="36" oninput="applyChatInputHeight(this.value)">
-                        <span id="chat-input-height-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">36px</span>
                     </div>
                 </div>
                 <hr style="margin: 20px 0; border:none; border-top:1px solid var(--border-color);">
@@ -1802,25 +1791,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/manage'; 
         }
-
-        function applyChatInputHeight(val) {
-            val = parseInt(val) || 36;
-            document.getElementById('chat-input-height-label').innerText = val + 'px';
-            document.getElementById('chat-input').style.height = val + 'px';
-            localStorage.setItem('chat_input_height', val);
-        }
-        (function restoreChatInputHeight() {
-            const saved = localStorage.getItem('chat_input_height');
-            if (saved) {
-                const val = parseInt(saved);
-                const input = document.getElementById('chat-input');
-                if (input) input.style.height = val + 'px';
-                const slider = document.getElementById('setting-chat-input-height');
-                if (slider) slider.value = val;
-                const label = document.getElementById('chat-input-height-label');
-                if (label) label.innerText = val + 'px';
-            }
-        })();
 
         // ——— 留言面板 ———
         let chatType = localStorage.getItem('chat_type') || 'chat';
