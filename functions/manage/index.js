@@ -54,7 +54,7 @@ export async function renderAuthPage() {
           * { margin:0; padding:0; box-sizing:border-box; }
           
           body { 
-              height:100vh; 
+              height:100dvh; 
               font-family:"Helvetica Neue",Arial,sans-serif; 
               background:#f1f8f1; 
               display:flex; 

@@ -141,7 +141,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             padding: 0 24px;
         }
 
-        .view-panel { display: none; padding: 24px; height: calc(100vh - 60px); overflow-y: auto; }
+        .view-panel { display: none; padding: 24px; height: calc(100dvh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
         /* 留言面板使用 flex 布局以固定底部输入栏 */
@@ -245,7 +245,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 叠加弹窗 Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(0,0,0,0.4);
             display: none;
             align-items: center;
@@ -324,7 +324,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 width: 260px;
                 min-width: 260px;
                 max-width: 80vw;
-                height: 100vh;
+                height: 100dvh;
                 overflow: visible;
                 justify-content: flex-start;
                 z-index: 150;
@@ -417,7 +417,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 </head>
 <body>
 
-    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
+    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100dvh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
 
     <div id="toast" class="toast"></div>
 
@@ -675,7 +675,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
     <!-- 弹窗：文章全文预览 -->
     <div id="modal-article-preview" class="modal-overlay">
-        <div class="modal-card" style="max-width:800px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-card" style="max-width:800px;max-height:85dvh;overflow-y:auto;">
             <h4 id="preview-title" style="margin-bottom:8px;"></h4>
             <p style="font-size:12px;color:#999;margin-bottom:12px;">
                 作者：<span id="preview-author"></span> | 分类：<span id="preview-cat"></span>
@@ -694,7 +694,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
     <!-- 弹窗：我的文章编辑 -->
     <div id="modal-my-article" class="modal-overlay">
-        <div class="modal-card" style="max-width:800px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-card" style="max-width:800px;max-height:85dvh;overflow-y:auto;">
             <h4 id="my-article-title-display" style="margin-bottom:12px;"></h4>
             <div class="form-group">
                 <label>标题</label>
