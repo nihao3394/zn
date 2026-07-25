@@ -1896,14 +1896,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             }
         }
 
-        function insertEmo(emo) {
-            const input = document.getElementById('chat-input');
-            if (input) {
-                input.value += emo;
-                input.focus();
-            }
-        }
-
         function toggleTypeList() {
             const dd = document.getElementById('type-dropdown');
             if (!dd) return;
@@ -1944,10 +1936,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     input.value = ''; 
                     loadChatMessages(); 
                 } else {
-                    if (typeof showToast === 'function') showToast(data.msg || '发送失败');
+                    showToast(data.msg || '发送失败');
                 }
             } catch(e) { 
-                if (typeof showToast === 'function') showToast('发送失败'); 
+                showToast('发送失败'); 
             }
         }
 
