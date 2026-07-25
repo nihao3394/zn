@@ -67,7 +67,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; height: 100dvh; overflow: hidden; }
 
         /* 左侧导航栏 */
         .sidebar {
@@ -141,7 +141,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             padding: 0 24px;
         }
 
-        .view-panel { display: none; padding: 24px; height: calc(100vh - 60px); overflow-y: auto; }
+        .view-panel { display: none; padding: 24px; height: calc(100dvh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
         /* 留言面板使用 flex 布局以固定底部输入栏 */
@@ -245,7 +245,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 叠加弹窗 Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(0,0,0,0.4);
             display: none;
             align-items: center;
@@ -324,7 +324,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 width: 260px;
                 min-width: 260px;
                 max-width: 80vw;
-                height: 100vh;
+                height: 100dvh;
                 overflow: visible;
                 justify-content: flex-start;
                 z-index: 150;
@@ -349,11 +349,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             .main-content { width: 100%; }
             .top-header { padding: 0 10px; height: 48px; display: flex; align-items: center; }
             .top-header h3 { font-size: 14px; flex: 1; }
-            .view-panel { padding: 12px; height: calc(100vh - 48px); }
+            .view-panel { padding: 12px; height: calc(100dvh - 48px); }
 
             .message-panel {
                 position: absolute;
-                max-height: calc(100vh - 80px);
+                max-height: calc(100dvh - 80px);
                 overflow-y: auto;
             }
 
@@ -423,7 +423,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 </head>
 <body>
 
-    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
+    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100dvh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
 
     <div id="toast" class="toast"></div>
 

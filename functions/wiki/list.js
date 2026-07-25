@@ -109,7 +109,7 @@ export async function onRequest(context) {
             .nav-links a { padding: 4px 8px; font-size: .82rem; }
             .layout-wrapper { flex-direction: column; padding: 0 4%; margin: 24px auto; gap: 0; }
             .menu-toggle { display: block; }
-            .sidebar { position: fixed; top: 0; left: -280px; height: 100vh; width: 260px; margin: 0; z-index: 200; border-radius: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; overflow-y: auto; padding-top: 60px; }
+            .sidebar { position: fixed; top: 0; left: -280px; height: 100dvh; width: 260px; margin: 0; z-index: 200; border-radius: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; overflow-y: auto; padding-top: 60px; }
             .sidebar.active { left: 0; }
             
             /* 手机端列表卡片自适应换行 */
