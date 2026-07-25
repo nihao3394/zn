@@ -210,9 +210,12 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
         .form-group input[type="text"],
         .form-group input[type="password"],
-        .form-group input[type="url"],
-        .form-group select {
+        .form-group input[type="url"] {
             height: var(--input-height);
+            box-sizing: border-box;
+        }
+        /* select 不用固定高度，避免文字被裁切 */
+        .form-group select {
             box-sizing: border-box;
         }
 
