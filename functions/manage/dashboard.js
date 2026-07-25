@@ -144,6 +144,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .view-panel { display: none; padding: 24px; height: calc(100vh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
+        /* 留言面板使用 flex 布局以固定底部输入栏 */
+        #panel-chat-panel.view-panel { overflow: hidden; }
+        #panel-chat-panel.view-panel.active { display: flex; flex-direction: column; }
+
         /* 长条形圆角卡片 (X轴长，Y轴短) */
         .horizontal-card {
             background: white;
@@ -553,10 +557,10 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </section>
 
         <!-- 3.3. 留言面板 -->
-        <section id="panel-chat-panel" class="view-panel" style="position:relative;">
-            <div style="position:absolute;top:12px;bottom:12px;left:12px;right:12px;max-width:800px;margin:0 auto;display:flex;flex-direction:column;">
+        <section id="panel-chat-panel" class="view-panel">
+            <div style="flex:1;display:flex;flex-direction:column;min-height:0;max-width:800px;width:100%;margin:0 auto;">
                 <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
-                <div style="display:flex;gap:6px;align-items:center;position:relative;flex-shrink:0;">
+                <div style="display:flex;gap:6px;align-items:center;position:relative;flex-shrink:0;padding-bottom:4px;">
                     <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">@</button>
                     <div id="at-dropdown" style="display:none;position:absolute;bottom:44px;left:0;width:220px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 0;"></div>
                     <button id="chat-emo-btn" onclick="toggleEmoList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">:)</button>
@@ -603,16 +607,18 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <span>维基百科提交侧边栏开关</span>
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
                 </div>
-                <div class="form-group mobile-only-setting">
+                <div class="form-group mobile-only-setting" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>右侧边栏触发区域宽度</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
                         <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
-                        <div class="setting-row">
-                            <label>输入框高度</label>
-                            <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
-                            <span id="input-height-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
-                        </div>
+                    </div>
+                </div>
+                <div class="form-group mobile-only-setting" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>输入框高度</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
+                        <span id="input-height-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
                     </div>
                 </div>
                 <hr style="margin: 20px 0; border:none; border-top:1px solid var(--border-color);">
@@ -1429,6 +1435,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             localStorage.setItem("wiki_trigger_width", val);
         }
 
+        function applyInputHeight(val) {
+            val = parseInt(val) || 32;
+            document.documentElement.style.setProperty('--input-height', val + 'px');
+            const label = document.getElementById("input-height-label");
+            if (label) { label.innerText = val + "px"; }
+            localStorage.setItem('pref_input_height', val);
+        }
+
         (function restoreTriggerWidth() {
             const saved = localStorage.getItem("wiki_trigger_width");
             if (saved) {
@@ -1438,24 +1452,18 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 if (slider) { slider.value = val; }
                 const label = document.getElementById("trigger-width-label");
                 if (label) { label.innerText = val + "px"; }
+            }
+        })();
 
-                function applyInputHeight(val) {
-                    document.documentElement.style.setProperty('--input-height', val + 'px');
-                    const label = document.getElementById("input-height-label");
-                    if (label) { label.innerText = val + "px"; }
-                    localStorage.setItem('pref_input_height', val);
-                }
-
-                function restoreInputHeight() {
-                    const saved = localStorage.getItem('pref_input_height');
-                    if (saved) {
-                        document.documentElement.style.setProperty('--input-height', saved + 'px');
-                        const slider = document.getElementById("setting-input-height");
-                        const label = document.getElementById("input-height-label");
-                        if (slider) slider.value = saved;
-                        if (label) label.innerText = saved + "px";
-                    }
-                }
+        (function restoreInputHeight() {
+            const saved = localStorage.getItem('pref_input_height');
+            if (saved) {
+                const val = parseInt(saved);
+                document.documentElement.style.setProperty('--input-height', val + 'px');
+                const slider = document.getElementById("setting-input-height");
+                const label = document.getElementById("input-height-label");
+                if (slider) slider.value = val;
+                if (label) label.innerText = val + "px";
             }
         })();
 
