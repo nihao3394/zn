@@ -29,7 +29,7 @@ export async function onRequestPost(context) {
         }
 
         // 2. 检查 R2 绑定
-        const r2 = env.IMAGE_R2;
+        const r2 = env.IMAGE_BUCKET;
         if (!r2) {
             return Response.json({ success: false, msg: "R2 未绑定" }, { status: 500 });
         }
