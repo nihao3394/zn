@@ -195,6 +195,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .wiki-drawer:hover,
         .wiki-drawer:focus-within { right: 0; }
 
+        /* 专属移动端设置项，默认在 PC 端不渲染 */
+        .mobile-only-setting {
+            display: none;
+        }
+
         /* 通用表单与按钮 */
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
@@ -289,6 +294,14 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 
         /* 移动端适配 */
         @media (max-width: 768px) {
+            /* 手机端恢复显示并维持原有的对齐样式 */
+            .mobile-only-setting {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 12px;
+            }
+
             .hamburger { display: flex; align-items: center; justify-content: center; margin-right: 6px; }
             .sidebar-resize-handle { display: block; }
 
@@ -557,7 +570,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <span>维基百科提交侧边栏开关</span>
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
                 </div>
-                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                <div class="form-group mobile-only-setting">
                     <span>右侧边栏触发区域宽度</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
