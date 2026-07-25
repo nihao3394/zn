@@ -358,7 +358,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 gap: 8px;
                 padding: 14px 16px;
             }
-            .card-meta { flex-direction: column; gap: 6px; }
+            .card-meta { flex-direction: column; gap: 6px; align-items: flex-start; } /* flex-start 用于覆盖桌面端的 center */
 
             /* 成员表格横向滚动 */
             .member-table { display: block; overflow-x: auto; font-size: 12px; }
