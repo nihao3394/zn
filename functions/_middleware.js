@@ -116,7 +116,7 @@ function getGateHtml() {
         <title>Knowledge Gateway</title>
         <style>
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { height:100dvh; font-family:"Helvetica Neue",Arial,sans-serif; background:#f1f8f1; display:flex; align-items:center; justify-content:center; color:#333; overflow:hidden;}
+            body { height:100vh; font-family:"Helvetica Neue",Arial,sans-serif; background:#f1f8f1; display:flex; align-items:center; justify-content:center; color:#333; overflow:hidden;}
             body::before { content:""; position:absolute; width:400px; height:400px; background:#a5d6a7; border-radius:50%; top:-120px; left:-120px; opacity:.35; }
             body::after { content:""; position:absolute; width:350px; height:350px; background:#81c784; border-radius:20%; bottom:-100px; right:-100px; transform:rotate(30deg); opacity:.25; }
             .container { position:relative; width:90%; max-width:420px; z-index:10; }

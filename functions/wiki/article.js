@@ -36,7 +36,7 @@ export async function onRequest(context) {
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;background:#f9f9f9;line-height:1.8;display:flex;flex-direction:column;min-height:100dvh}
+        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;background:#f9f9f9;line-height:1.8;display:flex;flex-direction:column;min-height:100vh}
         header{background:#2e7d32;color:#fff;padding:12px 0}
         .container{width:85%;max-width:860px;margin:0 auto}
         .nav-box{display:flex;justify-content:space-between;align-items:center}

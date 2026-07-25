@@ -141,7 +141,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             padding: 0 24px;
         }
 
-        .view-panel { display: none; padding: 24px; height: calc(100dvh - 60px); overflow-y: auto; }
+        .view-panel { display: none; padding: 24px; height: calc(100vh - 60px); overflow-y: auto; }
         .view-panel.active { display: block; }
 
         /* 留言面板使用 flex 布局以固定底部输入栏 */
@@ -245,7 +245,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         /* 叠加弹窗 Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100dvh;
+            top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.4);
             display: none;
             align-items: center;
@@ -324,7 +324,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 width: 260px;
                 min-width: 260px;
                 max-width: 80vw;
-                height: 100dvh;
+                height: 100vh;
                 overflow: visible;
                 justify-content: flex-start;
                 z-index: 150;
@@ -417,7 +417,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
 </head>
 <body>
 
-    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100dvh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
+    <div class="overlay" id="sidebar-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:140;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.display='none'">☰</div>
 
     <div id="toast" class="toast"></div>
 
