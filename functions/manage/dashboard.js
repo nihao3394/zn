@@ -553,18 +553,26 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </section>
 
         <!-- 3.3. 留言面板 -->
-        <section id="panel-chat-panel" class="view-panel" style="position:relative;">
-            <div style="position:absolute;top:12px;bottom:12px;left:12px;right:12px;max-width:800px;margin:0 auto;display:flex;flex-direction:column;">
-                <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
-                <div style="display:flex;gap:6px;align-items:center;position:relative;flex-shrink:0;">
+        <section id="panel-chat-panel" class="view-panel" style="display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 12px;">
+            <div style="max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; height: 100%; flex: 1; min-height: 0;">
+                <!-- 聊天消息展示区域 -->
+                <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; min-height: 0;"></div>
+        
+                <!-- 底部输入及控制行 -->
+                <div style="display: flex; gap: 6px; align-items: center; position: relative; flex-shrink: 0;">
                     <button id="chat-at-btn" onclick="toggleAtList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">@</button>
                     <div id="at-dropdown" style="display:none;position:absolute;bottom:44px;left:0;width:220px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 0;"></div>
+            
                     <button id="chat-emo-btn" onclick="toggleEmoList()" style="background:#eee;border:1px solid #ccc;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;">:)</button>
                     <div id="emo-dropdown" style="display:none;position:absolute;bottom:44px;left:44px;width:320px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px;"></div>
+            
                     <button id="chat-type-btn" onclick="toggleTypeList()" style="background:#aaa;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:bold;min-width:28px;flex-shrink:0;">T</button>
                     <div id="type-dropdown" style="display:none;position:absolute;bottom:44px;left:88px;width:200px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:99;padding:8px 12px;"></div>
-                    <input type="text" id="chat-input" class="form-control" placeholder="输入留言..." maxlength="1000" onkeydown="if(event.keyCode===13){sendChat()}" style="flex:1;min-width:0;">
-                    <button class="btn btn-primary" onclick="sendChat()" style="padding:6px 16px;font-size:13px;flex-shrink:0;">发送</button>
+            
+                    <!-- 输入框：绑定了前面设置的 --input-height 变量 -->
+                    <input type="text" id="chat-input" class="form-control" placeholder="输入留言..." maxlength="1000" onkeydown="if(event.keyCode===13){sendChat()}" style="flex:1; min-width:0; height:var(--input-height, 32px); box-sizing:border-box;">
+            
+                    <button class="btn btn-primary" onclick="sendChat()" style="padding:6px 16px; font-size:13px; flex-shrink:0; height:var(--input-height, 32px); box-sizing:border-box;">发送</button>
                 </div>
             </div>
         </section>
@@ -604,15 +612,18 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <input type="checkbox" id="setting-drawer-toggle" checked onchange="toggleWikiDrawerSetting(this.checked)">
                 </div>
                 <div class="form-group mobile-only-setting">
-                    <span>右侧边栏触发区域宽度</span>
-                    <div style="display:flex; align-items:center; gap:8px;">
+                    <!-- 侧边栏触发宽度 -->
+                    <div class="setting-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <label style="flex: 1; margin: 0; font-size: 13px; font-weight: 600;">右侧边栏触发宽度</label>
                         <input type="range" id="setting-trigger-width" min="11" max="48" value="32" oninput="applyTriggerWidth(this.value)">
-                        <span id="trigger-width-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
-                        <div class="setting-row">
-                            <label>输入框高度</label>
-                            <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
-                            <span id="input-height-label" style="min-width:32px;font-size:13px;color:#666;text-align:right;">32px</span>
-                        </div>
+                        <span id="trigger-width-label" style="min-width:32px; font-size:13px; color:#666; text-align:right;">32px</span>
+                    </div>
+    
+                    <!-- 输入框高度 -->
+                    <div class="setting-row" style="display: flex; align-items: center; gap: 8px;">
+                        <label style="flex: 1; margin: 0; font-size: 13px; font-weight: 600;">输入框高度</label>
+                        <input type="range" id="setting-input-height" min="28" max="48" value="32" oninput="applyInputHeight(this.value)">
+                        <span id="input-height-label" style="min-width:32px; font-size:13px; color:#666; text-align:right;">32px</span>
                     </div>
                 </div>
                 <hr style="margin: 20px 0; border:none; border-top:1px solid var(--border-color);">
