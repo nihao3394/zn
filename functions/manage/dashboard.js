@@ -1056,6 +1056,26 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                                 if (draft.tags) { articleTags = draft.tags; renderTags(); }
                             } catch(e) {}
                         }
+                    },
+
+                    upload: {
+                        accept: 'image/*',
+                        url: '/api/upload',
+                        fieldName: 'file[]',
+                        format(files, responseText) {
+                            const res = JSON.parse(responseText);
+                            if (!res.success) {
+                                return JSON.stringify({ msg: res.msg || '上传失败', code: 1, data: { errFiles: [files[0]?.name || 'unknown'], succMap: {} } });
+                            }
+                            return JSON.stringify({
+                                msg: "上传成功",
+                                code: 0,
+                                data: {
+                                    errFiles: [],
+                                    succMap: { [files[0]?.name || 'image']: res.imageUrl }
+                                }
+                            });
+                        }
                     }
                 });
             })();
