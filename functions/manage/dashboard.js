@@ -195,10 +195,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         .wiki-drawer:hover,
         .wiki-drawer:focus-within { right: 0; }
 
-        /* 关闭按钮（默认隐藏，移动端显示） */
-        .wiki-drawer-close { display: none; position: absolute; top: 8px; right: 12px; width: 28px; height: 28px; align-items: center; justify-content: center; font-size: 18px; color: #999; cursor: pointer; border-radius: 50%; }
-        .wiki-drawer-close:hover { background: #eee; color: #333; }
-
         /* 通用表单与按钮 */
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
@@ -336,13 +332,11 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
             .wiki-trigger-zone { width: 32px; background: rgba(46,125,50,0.08); border-radius: 6px 0 0 6px; }
-            .wiki-drawer-close { display: flex; }
 
             /* 取消移动端的原生 hover 触发，避免触屏卡死，改为依靠类名控制 */
             .wiki-trigger-zone:hover + .wiki-drawer,
             .wiki-drawer:hover { right: -280px; }
             .wiki-drawer.open { right: 0; box-shadow: -4px 0 20px rgba(0,0,0,0.25); }
-            .wiki-drawer .wiki-drawer-close { display: flex; } 
             .wiki-trigger-zone.active + .wiki-drawer,
             .wiki-drawer.open,
             .wiki-drawer:focus-within { right: 0 !important; }
@@ -428,7 +422,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 <div class="wiki-trigger-zone" onclick="toggleWikiDrawer()"></div>
                 <!-- 侧边抽屉 -->
                 <div id="wiki-drawer-panel" class="wiki-drawer">
-                    <div class="wiki-drawer-close" onclick="closeDrawer(true)">×</div>
                     <h4>提交新词条词条申请</h4>
                     <div class="form-group">
                         <label>您要提交的关键词：</label>
@@ -1497,6 +1490,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     if (kwInput || kwUsage) return;
                 }
                 
+                if (document.activeElement) document.activeElement.blur();
                 if(drawer) drawer.classList.remove('open');
                 if(trigger) trigger.classList.remove('active');
             } else {
