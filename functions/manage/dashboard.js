@@ -1823,7 +1823,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             const list = document.getElementById('at-user-list');
             if (!list) return;
             const filtered = filter ? chatUsers.filter(u => u.includes(filter)) : chatUsers;
-            list.innerHTML = '<div onclick="insertAt(\'@全体成员 \')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
+            list.innerHTML = '<div onclick="insertAt('@全体成员')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@全体成员</div>' +
                 filtered.map(u => \`<div onclick="insertAt('@${u} ')" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;">@${u}</div>\`).join('');
         }
 
