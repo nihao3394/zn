@@ -538,7 +538,7 @@ export function renderDashboardPage(userCtx, rootUser = '') {
         </section>
 
         <!-- 3.3. 留言面板 -->
-        <section id="panel-chat" class="view-panel">
+        <section id="panel-chat-panel" class="view-panel">
             <div style="max-width:800px;margin:0 auto;display:flex;flex-direction:column;height:100%;">
                 <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border-color);margin-bottom:12px;"></div>
                 <div style="display:flex;gap:6px;align-items:center;position:relative;">
