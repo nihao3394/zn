@@ -326,8 +326,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             /* Modal 宽度自适应 */
             .modal-card { width: 95%; max-width: none; padding: 16px; }
 
-            /* Toast 不超出屏幕且绝对水平居中 */
-            .toast { left: 50%; right: auto; transform: translateX(-50%); top: auto; bottom: 24px; width: max-content; max-width: 90vw; text-align: center; }
+            /* Toast 强制绝对水平居中 */
+            .toast { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; top: auto !important; bottom: 24px !important; width: max-content !important; max-width: 90vw !important; text-align: center; margin: 0 auto; }
 
             /* wiki 抽屉在手机上占满 */
             .wiki-drawer { width: 280px; right: -280px; }
@@ -435,7 +435,8 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="submitKeyword()">提交</button>
                         <button class="btn btn-secondary" onclick="clearKwForm()">清空</button>
-                        <button class="btn btn-secondary" onclick="closeDrawer()">取消</button>
+                        <!-- 传入 true 代表强制收回，无视输入框内容 -->
+                        <button class="btn btn-secondary" onclick="closeDrawer(true)">取消</button>
                     </div>
                 </div>
             </div>
@@ -1476,20 +1477,27 @@ export function renderDashboardPage(userCtx, rootUser = '') {
             document.getElementById('kw-usage').value = '';
         }
 
-        function closeDrawer() {
+        // 增加 force 参数，默认 false 代表普通点击空白处触发
+        function closeDrawer(force = false) {
             const drawer = document.getElementById('wiki-drawer-panel');
             const trigger = document.querySelector('.wiki-trigger-zone');
             
             if (window.innerWidth <= 768) {
-                // 移动端：通过移除类名来收回抽屉，响应空白区域与取消按钮点击
-                drawer.classList.remove('open');
-                if (trigger) trigger.classList.remove('active');
+                // 如果不是强制关闭（即点击了空白区），检查输入框是否有内容
+                if (!force) {
+                    const kwInput = document.getElementById('kw-input')?.value.trim();
+                    const kwUsage = document.getElementById('kw-usage')?.value.trim();
+                    // 如果有内容输入，拦截收回动作，防止数据丢失
+                    if (kwInput || kwUsage) return;
+                }
+                
+                if(drawer) drawer.classList.remove('open');
+                if(trigger) trigger.classList.remove('active');
             } else {
-                // PC端：通过内联样式强制收回
-                drawer.style.right = '-360px';
+                if(drawer) drawer.style.right = '-360px';
                 if (document.activeElement) document.activeElement.blur();
-                drawer.classList.remove('force-open');
-                setTimeout(() => { drawer.style.right = ''; }, 300);
+                if(drawer) drawer.classList.remove('force-open');
+                setTimeout(() => { if(drawer) drawer.style.right = ''; }, 300);
             }
         }
 
@@ -1501,11 +1509,6 @@ export function renderDashboardPage(userCtx, rootUser = '') {
                 drawer.classList.toggle('open');
                 if (trigger) trigger.classList.toggle('active');
             }
-        }
-
-        // 实现移动端专属的 × 按钮关闭逻辑
-        function closeWikiDrawer() {
-            closeDrawer();
         }
 
         async function loadKeywordAuditList() {
